@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="PollPe — today’s daily questions.">
   <title>PollPe · Daily questions</title>
-  <link rel="stylesheet" href="style.css?v=bottom-nav-20261019">
+  <link rel="stylesheet" href="style.css?v=options-20261020">
   <script src="config.js" defer></script>
-  <script src="app.js?v=today-ist-20261020" defer></script>
+  <script src="app.js?v=options-20261020" defer></script>
   <script src="coins.js?v=coins-tracker-20261020" defer></script>
 </head>
 <body>
@@ -77,7 +77,13 @@
       <form id="poll-form" novalidate>
         <label>Today’s date (IST)<input id="poll-date" type="date" required readonly aria-readonly="true"></label>
         <label>Question<textarea id="poll-question" rows="3" maxlength="500" required placeholder="What are you curious about today?"></textarea></label>
-        <label>Answer options <span class="label-note">one per line · 2–6 options</span><textarea id="poll-options" rows="6" maxlength="1000" required placeholder="Option one\nOption two\nOption three"></textarea></label>
+        <fieldset class="option-editor" aria-describedby="options-help">
+          <legend>Answer options</legend>
+          <p id="options-help" class="timestamp-note">Add or remove options independently. Keep 2–50 options, with up to 300 characters each.</p>
+          <label class="option-style-label">Option serial numbers<select id="option-label-style"><option value="numeric">Numbers: 1, 2, 3…</option><option value="alpha">Alphabet: A, B, C…</option><option value="none">No serial numbers</option></select></label>
+          <div id="poll-options" class="option-rows"></div>
+          <div class="form-actions"><button id="add-option" class="button button-outline" type="button">Add option</button><span id="option-count" class="timestamp-note" role="status" aria-live="polite"></span></div>
+        </fieldset>
         <div class="form-grid">
           <label>Selected answer <span class="label-note">choose exactly one option</span><select id="poll-selected" required disabled><option value="">Add options above</option></select></label>
           <label>Note <span class="label-note">optional</span><input id="poll-note" type="text" maxlength="300" placeholder="A little context, if useful"></label>

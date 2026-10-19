@@ -4,6 +4,8 @@
   const baseUrl = String(config.url || '').replace(/\/$/, '');
   const apiKey = config.key || '';
   const PAGE_SIZE = 100;
+  const MAX_OPTIONS = 50;
+  let nextOptionId = 0;
   let offset = 0;
   let hasMore = false;
   let allLoaded = [];
@@ -17,7 +19,7 @@
   const answerSelections = new Map();
 
   const $ = (id) => document.getElementById(id);
-  const els = { list: $('poll-list'), status: $('archive-status'), count: $('result-count'), load: $('load-more'), today: $('today-date'), admin: $('admin-panel'), adminToggle: $('admin-toggle'), adminClose: $('admin-close'), form: $('poll-form'), key: $('publishing-key'), date: $('poll-date'), question: $('poll-question'), options: $('poll-options'), selected: $('poll-selected'), note: $('poll-note'), publish: $('publish-button'), cancel: $('cancel-edit'), formStatus: $('form-status'), dialog: $('unlock-dialog'), unlockForm: $('unlock-form'), unlockButton: $('unlock-button'), unlockStatus: $('unlock-status'), mailForm: $('mail-form'), mailEmail: $('mail-email'), mailContent: $('mail-content'), mailSubmit: $('mail-submit'), mailStatus: $('mail-status'), mailList: $('mail-list'), mailListStatus: $('mail-list-status'), mailCount: $('mail-count'), mailLoad: $('mail-load-more') };
+  const els = { list: $('poll-list'), status: $('archive-status'), count: $('result-count'), load: $('load-more'), today: $('today-date'), admin: $('admin-panel'), adminToggle: $('admin-toggle'), adminClose: $('admin-close'), form: $('poll-form'), key: $('publishing-key'), date: $('poll-date'), question: $('poll-question'), options: $('poll-options'), addOption: $('add-option'), optionCount: $('option-count'), labelStyle: $('option-label-style'), selected: $('poll-selected'), note: $('poll-note'), publish: $('publish-button'), cancel: $('cancel-edit'), formStatus: $('form-status'), dialog: $('unlock-dialog'), unlockForm: $('unlock-form'), unlockButton: $('unlock-button'), unlockStatus: $('unlock-status'), mailForm: $('mail-form'), mailEmail: $('mail-email'), mailContent: $('mail-content'), mailSubmit: $('mail-submit'), mailStatus: $('mail-status'), mailList: $('mail-list'), mailListStatus: $('mail-list-status'), mailCount: $('mail-count'), mailLoad: $('mail-load-more') };
 
   function setStatus(text, kind = '') { els.status.textContent = text; els.status.className = `status ${kind}`.trim(); }
   function setFormStatus(text, kind = '') { els.formStatus.textContent = text; els.formStatus.className = `form-status ${kind}`.trim(); }
@@ -30,8 +32,60 @@
   let rolloverTimer;
   function syncDayLabel() { els.today.textContent = `${formatDate(displayedDay)} · IST`; }
   function formatMailTimestamp(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Unknown time' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date); }
-  function optionValues() { return els.options.value.split(/\r?\n/).map(v => v.trim()).filter(Boolean); }
-  function syncSelected() { const values = optionValues(); const old = Number(els.selected.value); els.selected.textContent = ''; if (values.length < 2) { els.selected.disabled = true; const opt = document.createElement('option'); opt.textContent = 'Add at least two options'; opt.value = ''; els.selected.append(opt); return; } els.selected.disabled = false; values.forEach((value, i) => { const opt = document.createElement('option'); opt.value = String(i); opt.textContent = value; els.selected.append(opt); }); els.selected.value = String(Math.min(Number.isInteger(old) ? old : 0, values.length - 1)); }
+  function optionInputs() { return [...els.options.querySelectorAll('.option-input')]; }
+  function optionValues() { return optionInputs().map(input => input.value.trim()); }
+  function optionSerial(index, style = els.labelStyle.value) {
+    if (style === 'numeric') return String(index + 1);
+    if (style !== 'alpha') return '';
+    let number = index + 1; let label = '';
+    while (number > 0) { number -= 1; label = String.fromCharCode(65 + number % 26) + label; number = Math.floor(number / 26); }
+    return label;
+  }
+  function syncSelected(selectedIndex = Number(els.selected.value)) {
+    const inputs = optionInputs(); const values = optionValues();
+    inputs.forEach((input, index) => {
+      const row = input.closest('.option-row');
+      row.querySelector('label').textContent = `Option ${optionSerial(index) || index + 1}`;
+      const remove = row.querySelector('button');
+      remove.disabled = inputs.length <= 2;
+      remove.setAttribute('aria-label', `Remove option ${optionSerial(index) || index + 1}`);
+    });
+    els.optionCount.textContent = `${values.length} of ${MAX_OPTIONS} options`;
+    els.addOption.disabled = values.length >= MAX_OPTIONS;
+    els.selected.replaceChildren(); els.selected.disabled = values.length < 2;
+    values.forEach((value, index) => {
+      const opt = document.createElement('option'); opt.value = String(index);
+      const serial = optionSerial(index);
+      opt.textContent = `${serial ? serial + '. ' : ''}${value || '(enter option text)'}`;
+      els.selected.append(opt);
+    });
+    els.selected.value = String(Math.max(0, Math.min(Number.isInteger(selectedIndex) ? selectedIndex : 0, values.length - 1)));
+  }
+  function addOption(value = '', focus = false) {
+    if (optionInputs().length >= MAX_OPTIONS) return;
+    const row = document.createElement('div'); row.className = 'option-row';
+    const field = document.createElement('div'); field.className = 'option-field';
+    const input = document.createElement('input'); input.type = 'text'; input.className = 'option-input';
+    input.id = `option-content-${++nextOptionId}`; input.maxLength = 300; input.required = true;
+    input.value = value; input.placeholder = 'Enter answer option';
+    const label = document.createElement('label'); label.htmlFor = input.id;
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button button-quiet remove-option'; remove.textContent = 'Remove';
+    remove.addEventListener('click', () => {
+      const inputs = optionInputs(); if (inputs.length <= 2) return;
+      const index = inputs.indexOf(input); let selected = Number(els.selected.value);
+      if (index < selected) selected -= 1;
+      row.remove(); syncSelected(selected);
+      const remaining = optionInputs(); remaining[Math.min(index, remaining.length - 1)].focus();
+    });
+    field.append(label, input); row.append(field, remove); els.options.append(row); syncSelected();
+    if (focus) input.focus();
+  }
+  function setOptions(values = ['', '']) {
+    els.options.replaceChildren();
+    values.forEach(value => addOption(value));
+    while (optionInputs().length < 2) addOption();
+    syncSelected(0);
+  }
 
   async function fetchPolls(append = false) {
     if (!configured()) { setStatus('Add your Supabase URL and public key in config.js to load today’s questions.', 'error'); return; }
@@ -41,7 +95,7 @@
     if (!append) { offset = 0; allLoaded = []; els.list.replaceChildren(); }
     setStatus('Loading today’s questions…'); els.load.hidden = true;
     try {
-      const params = new URLSearchParams({ select: 'id,poll_date,question,options,selected_option,note,updated_at', order: 'poll_date.desc,created_at.desc', limit: String(PAGE_SIZE), offset: String(offset) });
+      const params = new URLSearchParams({ select: 'id,poll_date,question,options,selected_option,note,updated_at,option_label_style', order: 'poll_date.desc,created_at.desc', limit: String(PAGE_SIZE), offset: String(offset) });
       params.set('poll_date', 'eq.' + day);
       const response = await fetch(`${baseUrl}/rest/v1/pollpe_polls?${params}`, { headers: headers() });
       if (!response.ok) throw new Error(`Question request failed (${response.status}).`);
@@ -85,7 +139,7 @@
     choices.forEach((choice, index) => {
       const label = document.createElement('label'); label.className = 'answer';
       const input = document.createElement('input'); input.type = 'radio'; input.name = `answer-${row.id}`; input.value = String(index); input.checked = index === selectedIndex;
-      const text = document.createElement('span'); text.className = 'answer-text'; text.textContent = choice;
+      const text = document.createElement('span'); text.className = 'answer-text'; const serial = optionSerial(index, row.option_label_style || 'none'); text.textContent = `${serial ? serial + '. ' : ''}${choice}`;
       const tag = document.createElement('span'); tag.className = 'answer-tag'; tag.textContent = 'Selected'; tag.setAttribute('aria-hidden', 'true');
       label.classList.toggle('selected', input.checked); tag.hidden = !input.checked;
       input.addEventListener('change', () => {
@@ -122,9 +176,9 @@
     els.mailSubmit.disabled = true; els.mailStatus.className = 'form-status'; els.mailStatus.textContent = 'Publishing publicly…';
     try { const response = await fetch(`${baseUrl}/rest/v1/pollpe_mail_posts`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }), body: JSON.stringify({ email_address: email, content }) }); if (!response.ok) throw new Error(`Submission failed (${response.status}).`); els.mailForm.reset(); els.mailStatus.textContent = 'Published publicly.'; await fetchMail(false); } catch (error) { els.mailStatus.textContent = error.message || 'Could not publish. Please try again.'; els.mailStatus.className = 'form-status error'; } finally { els.mailSubmit.disabled = false; }
   }
-  function beginEdit(row) { if (!publishingKey) return; if (row.poll_date !== localToday()) { refreshDay(); return; } editingId = row.id; els.date.value = row.poll_date || ''; els.question.value = row.question || ''; els.options.value = (Array.isArray(row.options) ? row.options : []).join('\n'); syncSelected(); els.selected.value = String(row.selected_option ?? 0); els.note.value = row.note || ''; els.publish.textContent = 'Save changes'; els.cancel.hidden = false; els.form.scrollIntoView({ behavior: 'smooth', block: 'start' }); setFormStatus('Editing this question.'); }
-  function resetForm() { editingId = null; els.form.reset(); els.date.value = localToday(); syncSelected(); els.publish.textContent = 'Publish question'; els.cancel.hidden = true; setFormStatus(''); }
-  async function publish(event) { event.preventDefault(); if (isBusy) return; if (!publishingKey) { openUnlock(); return; } if (els.date.value !== localToday()) { refreshDay(); setFormStatus('The India date has changed. Please publish for today.', 'error'); return; } const values = optionValues(); if ( !els.date.value || !els.question.value.trim() || values.length < 2 || values.length > 6 || els.selected.value === '' || !Number.isInteger(Number(els.selected.value)) || Number(els.selected.value) < 0 || Number(els.selected.value) >= values.length) { setFormStatus('Please complete the date, question, and 2–6 options.', 'error'); return; } isBusy = true; els.publish.disabled = true; setFormStatus(editingId ? 'Saving…' : 'Publishing…'); const body = { p_key: publishingKey, p_id: editingId, p_date: els.date.value, p_question: els.question.value.trim(), p_options: values, p_selected: Number(els.selected.value), p_note: els.note.value.trim() };
+  function beginEdit(row) { if (!publishingKey) return; if (row.poll_date !== localToday()) { refreshDay(); return; } editingId = row.id; els.date.value = row.poll_date || ''; els.question.value = row.question || ''; els.labelStyle.value = row.option_label_style || 'none'; setOptions(Array.isArray(row.options) ? row.options : []); els.selected.value = String(row.selected_option ?? 0); els.note.value = row.note || ''; els.publish.textContent = 'Save changes'; els.cancel.hidden = false; els.form.scrollIntoView({ behavior: 'smooth', block: 'start' }); setFormStatus('Editing this question.'); }
+  function resetForm() { editingId = null; els.form.reset(); els.date.value = localToday(); setOptions(); els.publish.textContent = 'Publish question'; els.cancel.hidden = true; setFormStatus(''); }
+  async function publish(event) { event.preventDefault(); if (isBusy) return; if (!publishingKey) { openUnlock(); return; } if (els.date.value !== localToday()) { refreshDay(); setFormStatus('The India date has changed. Please publish for today.', 'error'); return; } const values = optionValues(); if ( !els.date.value || !els.question.value.trim() || values.length < 2 || values.length > MAX_OPTIONS || values.some(value => !value || value.length > 300) || els.selected.value === '' || !Number.isInteger(Number(els.selected.value)) || Number(els.selected.value) < 0 || Number(els.selected.value) >= values.length) { setFormStatus('Enter a question and 2–50 non-empty options (up to 300 characters each), then choose one selected answer.', 'error'); return; } isBusy = true; els.publish.disabled = true; setFormStatus(editingId ? 'Saving…' : 'Publishing…'); const body = { p_key: publishingKey, p_id: editingId, p_date: els.date.value, p_question: els.question.value.trim(), p_options: values, p_label_style: els.labelStyle.value, p_selected: Number(els.selected.value), p_note: els.note.value.trim() };
     try { const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_publish`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json', Prefer: 'return=representation' }), body: JSON.stringify(body) }); if (!response.ok) throw new Error('Publishing failed. Check the key and try again.'); resetForm(); setFormStatus('Published successfully.'); await fetchPolls(false); } catch (error) { setFormStatus(error.message || 'Could not publish. Please try again.', 'error'); } finally { isBusy = false; els.publish.disabled = false; }
   }
   async function deletePoll(row) { if (!publishingKey || isBusy || !window.confirm(`Delete the question from ${formatDate(row.poll_date)}? This cannot be undone.`)) return; const key = publishingKey; isBusy = true; setFormStatus('Deleting…'); try { const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_delete`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ p_key: key, p_id: row.id }) }); if (!response.ok) throw new Error('Delete failed. Check the key and try again.'); if (editingId === row.id) resetForm(); setFormStatus('Deleted.'); await fetchPolls(false); } catch (error) { setFormStatus(error.message || 'Could not delete. Please try again.', 'error'); } finally { isBusy = false; } }
@@ -176,7 +230,7 @@
   els.dialog.addEventListener('cancel', event => { event.preventDefault(); closeUnlock(); });
   window.addEventListener('pagehide', () => { closeUnlock(); lockAdmin(); });
 
-  els.options.addEventListener('input', syncSelected); els.form.addEventListener('submit', publish); els.cancel.addEventListener('click', resetForm); els.adminToggle.addEventListener('click', openUnlock); els.adminClose.addEventListener('click', () => { lockAdmin(); els.adminToggle.focus(); }); els.load.addEventListener('click', () => fetchPolls(true));
+  els.options.addEventListener('input', () => syncSelected()); els.labelStyle.addEventListener('change', () => syncSelected()); els.addOption.addEventListener('click', () => addOption('', true)); els.form.addEventListener('submit', publish); els.cancel.addEventListener('click', resetForm); els.adminToggle.addEventListener('click', openUnlock); els.adminClose.addEventListener('click', () => { lockAdmin(); els.adminToggle.focus(); }); els.load.addEventListener('click', () => fetchPolls(true));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshDay(); scheduleRollover(); } });
   window.addEventListener('focus', () => { refreshDay(); scheduleRollover(); });
   els.mailForm.addEventListener('submit', submitMail); els.mailLoad.addEventListener('click', () => fetchMail(true));
@@ -184,5 +238,5 @@
   function activateTab(name, focus = false) { const selected = Object.hasOwn(panels, name) ? name : 'archive'; if (selected !== 'archive' && publishingKey) lockAdmin(); tabLinks.forEach(tab => { const active = tab.id === `${selected}-tab`; tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1; }); Object.entries(panels).forEach(([key, panel]) => { panel.hidden = key !== selected; }); if (selected === 'mail' && !mailRows.length) fetchMail(false); if (focus) document.getElementById(`${selected}-tab`).focus(); }
   function hashTab() { activateTab(window.location.hash.slice(1)); }
   tabLinks.forEach((tab, index) => tab.addEventListener('keydown', event => { let next = null; if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = tabLinks[(index + 1) % tabLinks.length]; if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = tabLinks[(index - 1 + tabLinks.length) % tabLinks.length]; if (event.key === 'Home') next = tabLinks[0]; if (event.key === 'End') next = tabLinks[tabLinks.length - 1]; if (next) { event.preventDefault(); if (window.location.hash !== next.hash) window.addEventListener('hashchange', () => next.focus({ preventScroll: true }), { once: true }); next.focus(); next.click(); } }));
-  window.addEventListener('hashchange', hashTab); els.date.value = localToday(); syncSelected(); syncDayLabel(); scheduleRollover(); hashTab(); fetchPolls(false);
+  window.addEventListener('hashchange', hashTab); els.date.value = localToday(); setOptions(); syncDayLabel(); scheduleRollover(); hashTab(); fetchPolls(false);
 })();

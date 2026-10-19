@@ -75,3 +75,15 @@ html{scroll-padding-bottom:calc(124px + env(safe-area-inset-bottom,0px))}
 .tab-link:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
 @media(max-width:700px){.site-header{flex-wrap:nowrap;gap:16px}.nav-admin{width:44px;height:44px;padding:10px}.bottom-nav{bottom:calc(12px + env(safe-area-inset-bottom,0px));width:calc(100% - 24px);max-width:480px;border-radius:24px;padding:6px}.tab-link{min-height:72px;border-radius:18px}.nav-label{font-size:.7rem}}
 @media(prefers-reduced-motion:reduce){.tab-link,.nav-icon{transition:none}}
+
+/* Independent answer rows keep numbering separate from editable content. */
+.option-editor{min-width:0;margin:0;padding:18px;border:1px solid var(--line);border-radius:9px;display:grid;gap:16px}
+.option-editor legend{padding:0 6px;font-size:.88rem;font-weight:750}
+.option-style-label{max-width:330px}
+.option-rows{display:grid;gap:12px}
+.option-row{display:flex;align-items:flex-end;gap:10px;min-width:0}
+.option-field{flex:1;min-width:0;display:grid;gap:6px}
+.option-row .remove-option{min-height:44px;padding:10px 12px;flex:0 0 auto}
+.option-row .remove-option:disabled{opacity:.4}
+.option-field input{min-width:0}
+@media(max-width:700px){.option-editor{padding:12px}.option-row{gap:4px}.option-row .remove-option{padding:10px 7px;font-size:.78rem}.option-field input,.option-style-label select{font-size:16px}}
