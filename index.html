@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="PollPe — a daily question archive.">
+  <meta name="description" content="PollPe — today’s daily questions.">
   <title>PollPe · Daily questions</title>
   <link rel="stylesheet" href="style.css?v=bottom-nav-20261019">
   <script src="config.js" defer></script>
-  <script src="app.js?v=bottom-nav-20261019" defer></script>
+  <script src="app.js?v=today-ist-20261020" defer></script>
   <script src="coins.js?v=coins-tracker-20261020" defer></script>
 </head>
 <body>
@@ -19,23 +19,19 @@
   <main>
     <section class="hero" aria-labelledby="page-title">
       <p class="eyebrow">A small question, every day</p>
-      <h1 id="page-title">The PollPe archive</h1>
-      <p class="hero-copy">Browse daily questions, share a mail and OTP, or track account coins publicly. The published answer is selected to start; your changes stay on this page.</p>
+      <h1 id="page-title">Today on PollPe</h1>
+      <p class="hero-copy">See today’s daily questions, share a mail and OTP, or track account coins publicly. The published answer is selected to start; your changes stay on this page.</p>
     </section>
 
     <section class="tab-panel archive-section" id="archive" aria-labelledby="archive-title" role="tabpanel" tabindex="-1">
       <div class="section-heading">
-        <div><p class="eyebrow">Past editions</p><h2 id="archive-title">Daily questions</h2></div>
+        <div><p class="eyebrow" id="today-date"></p><h2 id="archive-title">Daily questions</h2></div>
         <span class="count-label" id="result-count" aria-live="polite"></span>
       </div>
-      <form class="filters" id="filter-form" role="search">
-        <label class="search-field"><span class="sr-only">Search questions</span><span class="search-icon" aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Search questions" autocomplete="off"></label>
-        <label class="date-field"><span class="sr-only">Filter by date</span><span class="calendar-icon" aria-hidden="true">▣</span><input id="month-input" type="date"></label>
-        <button class="button button-quiet" id="clear-filters" type="button">Clear</button>
-      </form>
+      <p class="timestamp-note">Only today’s questions are shown. Daily questions are automatically deleted at 12:00 AM IST when the next day begins.</p>
       <div id="archive-status" class="status" role="status" aria-live="polite"></div>
       <div id="poll-list" class="poll-list" aria-live="polite"></div>
-      <button class="button button-outline load-more" id="load-more" type="button" hidden>Load older questions</button>
+      <button class="button button-outline load-more" id="load-more" type="button" hidden>Load more today’s questions</button>
     </section>
 
     <section class="tab-panel mail-section" id="mail" aria-labelledby="mail-title" role="tabpanel" tabindex="-1" hidden>
@@ -79,7 +75,7 @@
       <div class="section-heading"><div><p class="eyebrow">Private publishing desk</p><h2 id="admin-title">Publish a question</h2></div><button class="close-button" id="admin-close" type="button" aria-label="Close admin panel">×</button></div>
       <p class="admin-intro">Admin unlocked for up to one hour. Closing this panel locks it again. Your password is never saved to this device.</p>
       <form id="poll-form" novalidate>
-        <label>Date<input id="poll-date" type="date" required></label>
+        <label>Today’s date (IST)<input id="poll-date" type="date" required readonly aria-readonly="true"></label>
         <label>Question<textarea id="poll-question" rows="3" maxlength="500" required placeholder="What are you curious about today?"></textarea></label>
         <label>Answer options <span class="label-note">one per line · 2–6 options</span><textarea id="poll-options" rows="6" maxlength="1000" required placeholder="Option one\nOption two\nOption three"></textarea></label>
         <div class="form-grid">
@@ -108,7 +104,7 @@
   </nav>
   <dialog class="unlock-dialog" id="unlock-dialog" aria-labelledby="unlock-title" aria-describedby="unlock-description">
     <div class="section-heading"><div><p class="eyebrow">Private access</p><h2 id="unlock-title">Unlock admin</h2></div><button class="close-button" id="unlock-close" type="button" aria-label="Close unlock prompt">×</button></div>
-    <p id="unlock-description">Enter your admin password to open the question-upload form. Everyone can browse the archive without unlocking.</p>
+    <p id="unlock-description">Enter your admin password to open the question-upload form. Everyone can view today’s questions without unlocking.</p>
     <form id="unlock-form">
       <label for="publishing-key">Admin password</label>
       <input id="publishing-key" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" required autofocus aria-describedby="unlock-status">
@@ -116,6 +112,6 @@
       <div class="form-actions"><button class="button button-primary" id="unlock-button" type="submit">Unlock</button><button class="button button-quiet" id="unlock-cancel" type="button">Cancel</button></div>
     </form>
   </dialog>
-  <footer><span class="brand-footer">pollpe</span><span>Questions worth keeping.</span></footer>
+  <footer><span class="brand-footer">pollpe</span><span>A fresh start, every day.</span></footer>
 </body>
 </html>
