@@ -52,6 +52,7 @@
         <label>Email address<input id="mail-email" type="email" maxlength="254" autocomplete="email" required></label>
         <label>Content <span class="label-note">including an OTP, if needed · max 20,000 characters</span><textarea id="mail-content" rows="8" maxlength="20000" required></textarea></label>
         <p class="timestamp-note"><strong>Timestamp:</strong> Set automatically when you publish (server time). It cannot be edited.</p>
+        <p class="timestamp-note"><strong>Auto-delete:</strong> Mail &amp; OTP posts expire 6 hours after their server timestamp and are deleted by cleanup that runs every minute. Refresh to update posts already loaded on this page. Coin history and daily questions are not affected.</p>
         <div class="form-actions"><button class="button button-primary" id="mail-submit" type="submit">Publish publicly</button><span id="mail-status" class="form-status" role="status" aria-live="polite"></span></div>
       </form>
       <div id="mail-list-status" class="status" role="status" aria-live="polite"></div>
