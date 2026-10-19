@@ -11,10 +11,13 @@
   let isBusy = false;
   let publishingKey = '';
   let unlockAttempt = 0;
+  let mailOffset = 0;
+  let mailHasMore = false;
+  let mailRows = [];
   const answerSelections = new Map();
 
   const $ = (id) => document.getElementById(id);
-  const els = { list: $('poll-list'), status: $('archive-status'), count: $('result-count'), load: $('load-more'), search: $('search-input'), month: $('month-input'), clear: $('clear-filters'), admin: $('admin-panel'), adminToggle: $('admin-toggle'), adminClose: $('admin-close'), form: $('poll-form'), key: $('publishing-key'), date: $('poll-date'), question: $('poll-question'), options: $('poll-options'), selected: $('poll-selected'), note: $('poll-note'), publish: $('publish-button'), cancel: $('cancel-edit'), formStatus: $('form-status'), dialog: $('unlock-dialog'), unlockForm: $('unlock-form'), unlockButton: $('unlock-button'), unlockStatus: $('unlock-status') };
+  const els = { list: $('poll-list'), status: $('archive-status'), count: $('result-count'), load: $('load-more'), search: $('search-input'), month: $('month-input'), clear: $('clear-filters'), admin: $('admin-panel'), adminToggle: $('admin-toggle'), adminClose: $('admin-close'), form: $('poll-form'), key: $('publishing-key'), date: $('poll-date'), question: $('poll-question'), options: $('poll-options'), selected: $('poll-selected'), note: $('poll-note'), publish: $('publish-button'), cancel: $('cancel-edit'), formStatus: $('form-status'), dialog: $('unlock-dialog'), unlockForm: $('unlock-form'), unlockButton: $('unlock-button'), unlockStatus: $('unlock-status'), mailForm: $('mail-form'), mailEmail: $('mail-email'), mailContent: $('mail-content'), mailTimestamp: $('mail-timestamp'), mailSubmit: $('mail-submit'), mailStatus: $('mail-status'), mailList: $('mail-list'), mailListStatus: $('mail-list-status'), mailCount: $('mail-count'), mailLoad: $('mail-load-more') };
 
   function setStatus(text, kind = '') { els.status.textContent = text; els.status.className = `status ${kind}`.trim(); }
   function setFormStatus(text, kind = '') { els.formStatus.textContent = text; els.formStatus.className = `form-status ${kind}`.trim(); }
@@ -22,6 +25,8 @@
   function configured() { return Boolean(baseUrl && apiKey); }
   function formatDate(value) { const date = new Date(`${value}T12:00:00`); return new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(date); }
   function localToday() { const d = new Date(); const pad = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+  function localDateTime() { const d = new Date(); const pad = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+  function formatMailTimestamp(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Unknown time' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date); }
   function optionValues() { return els.options.value.split(/\r?\n/).map(v => v.trim()).filter(Boolean); }
   function syncSelected() { const values = optionValues(); const old = Number(els.selected.value); els.selected.textContent = ''; if (values.length < 2) { els.selected.disabled = true; const opt = document.createElement('option'); opt.textContent = 'Add at least two options'; opt.value = ''; els.selected.append(opt); return; } els.selected.disabled = false; values.forEach((value, i) => { const opt = document.createElement('option'); opt.value = String(i); opt.textContent = value; els.selected.append(opt); }); els.selected.value = String(Math.min(Number.isInteger(old) ? old : 0, values.length - 1)); }
 
@@ -78,6 +83,25 @@
     if (publishingKey && !els.admin.hidden) { const actions = document.createElement('div'); actions.className = 'card-actions'; const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Edit'; edit.addEventListener('click', () => beginEdit(row)); const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', () => deletePoll(row)); actions.append(edit, remove); card.append(actions); }
     els.list.append(card);
   }
+  async function fetchMail(append = false) {
+    if (!configured()) { els.mailListStatus.textContent = 'Add your Supabase URL and public key in config.js to load public mail.'; els.mailListStatus.className = 'status error'; return; }
+    if (!append) { mailOffset = 0; mailRows = []; els.mailList.replaceChildren(); }
+    els.mailListStatus.textContent = 'Loading public mail…'; els.mailListStatus.className = 'status'; els.mailLoad.hidden = true;
+    try { const params = new URLSearchParams({ select: 'id,email_address,content,mail_timestamp,created_at', order: 'mail_timestamp.desc,created_at.desc,id.desc', limit: '50', offset: String(mailOffset) }); const response = await fetch(`${baseUrl}/rest/v1/pollpe_mail_posts?${params}`, { headers: headers() }); if (!response.ok) throw new Error(`Mail request failed (${response.status}).`); const rows = await response.json(); mailRows = append ? mailRows.concat(rows) : rows; mailOffset += rows.length; mailHasMore = rows.length === 50; renderMail(); } catch (error) { els.mailListStatus.textContent = error.message || 'Could not load public mail. Please try again.'; els.mailListStatus.className = 'status error'; }
+  }
+  function renderMail() {
+    els.mailList.replaceChildren(); els.mailCount.textContent = mailRows.length ? `${mailRows.length} post${mailRows.length === 1 ? '' : 's'}` : '';
+    if (!mailRows.length) { els.mailListStatus.textContent = 'No public mail has been submitted yet.'; els.mailListStatus.className = 'status empty'; } else { els.mailListStatus.textContent = ''; mailRows.forEach(row => { const card = document.createElement('article'); card.className = 'mail-card'; const meta = document.createElement('div'); meta.className = 'mail-meta'; meta.textContent = `${row.email_address || 'Anonymous'} · ${formatMailTimestamp(row.mail_timestamp)}`; const content = document.createElement('p'); content.className = 'mail-content'; content.textContent = row.content || ''; card.append(meta, content); els.mailList.append(card); }); }
+    els.mailLoad.hidden = !mailHasMore;
+  }
+  async function submitMail(event) {
+    event.preventDefault(); if (els.mailSubmit.disabled) return; const email = els.mailEmail.value.trim(); const content = els.mailContent.value; const timestamp = els.mailTimestamp.value;
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { els.mailStatus.textContent = 'Enter a valid email address (254 characters maximum).'; els.mailStatus.className = 'form-status error'; els.mailEmail.focus(); return; }
+    if (!content.trim() || content.length > 20000) { els.mailStatus.textContent = 'Enter content (20,000 characters maximum).'; els.mailStatus.className = 'form-status error'; els.mailContent.focus(); return; }
+    const parsed = new Date(timestamp); if (!timestamp || Number.isNaN(parsed.getTime())) { els.mailStatus.textContent = 'Enter a valid timestamp.'; els.mailStatus.className = 'form-status error'; els.mailTimestamp.focus(); return; }
+    els.mailSubmit.disabled = true; els.mailStatus.className = 'form-status'; els.mailStatus.textContent = 'Publishing publicly…';
+    try { const response = await fetch(`${baseUrl}/rest/v1/pollpe_mail_posts`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }), body: JSON.stringify({ email_address: email, content, mail_timestamp: parsed.toISOString() }) }); if (!response.ok) throw new Error(`Submission failed (${response.status}).`); els.mailForm.reset(); els.mailTimestamp.value = localDateTime(); els.mailStatus.textContent = 'Published publicly.'; await fetchMail(false); } catch (error) { els.mailStatus.textContent = error.message || 'Could not publish. Please try again.'; els.mailStatus.className = 'form-status error'; } finally { els.mailSubmit.disabled = false; }
+  }
   function beginEdit(row) { if (!publishingKey) return; editingId = row.id; els.date.value = row.poll_date || ''; els.question.value = row.question || ''; els.options.value = (Array.isArray(row.options) ? row.options : []).join('\n'); syncSelected(); els.selected.value = String(row.selected_option ?? 0); els.note.value = row.note || ''; els.publish.textContent = 'Save changes'; els.cancel.hidden = false; els.form.scrollIntoView({ behavior: 'smooth', block: 'start' }); setFormStatus('Editing this question.'); }
   function resetForm() { editingId = null; els.form.reset(); els.date.value = localToday(); syncSelected(); els.publish.textContent = 'Publish question'; els.cancel.hidden = true; setFormStatus(''); }
   async function publish(event) { event.preventDefault(); if (isBusy) return; if (!publishingKey) { openUnlock(); return; } const values = optionValues(); if ( !els.date.value || !els.question.value.trim() || values.length < 2 || values.length > 6 || els.selected.value === '' || !Number.isInteger(Number(els.selected.value)) || Number(els.selected.value) < 0 || Number(els.selected.value) >= values.length) { setFormStatus('Please complete the date, question, and 2–6 options.', 'error'); return; } isBusy = true; els.publish.disabled = true; setFormStatus(editingId ? 'Saving…' : 'Publishing…'); const body = { p_key: publishingKey, p_id: editingId, p_date: els.date.value, p_question: els.question.value.trim(), p_options: values, p_selected: Number(els.selected.value), p_note: els.note.value.trim() };
@@ -97,6 +121,8 @@
   }
   function openUnlock() {
     if (publishingKey) { lockAdmin(); return; }
+    activateTab('archive');
+    if (window.location.hash !== '#archive') window.location.hash = 'archive';
     els.unlockStatus.textContent = ''; els.key.value = '';
     els.dialog.showModal(); els.key.focus();
   }
@@ -132,5 +158,10 @@
 
   els.options.addEventListener('input', syncSelected); els.form.addEventListener('submit', publish); els.cancel.addEventListener('click', resetForm); els.adminToggle.addEventListener('click', openUnlock); els.adminClose.addEventListener('click', () => { lockAdmin(); els.adminToggle.focus(); }); let searchTimer; els.search.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => fetchPolls(false), 300); }); els.month.addEventListener('input', () => fetchPolls(false)); els.clear.addEventListener('click', () => { clearTimeout(searchTimer); els.search.value = ''; els.month.value = ''; fetchPolls(false); }); els.load.addEventListener('click', () => fetchPolls(true));
   $('filter-form').addEventListener('submit', e => e.preventDefault());
-  els.date.value = localToday(); syncSelected(); fetchPolls(false);
+  els.mailForm.addEventListener('submit', submitMail); els.mailTimestamp.value = localDateTime(); els.mailLoad.addEventListener('click', () => fetchMail(true));
+  const tabLinks = [...document.querySelectorAll('.tab-link')]; const panels = { archive: $('archive'), mail: $('mail') };
+  function activateTab(name, focus = false) { const selected = name === 'mail' ? 'mail' : 'archive'; if (selected === 'mail' && publishingKey) lockAdmin(); tabLinks.forEach(tab => { const active = tab.id === `${selected}-tab`; tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1; }); Object.entries(panels).forEach(([key, panel]) => { panel.hidden = key !== selected; }); if (selected === 'mail' && !mailRows.length) fetchMail(false); if (focus) document.getElementById(`${selected}-tab`).focus(); }
+  function hashTab() { activateTab(window.location.hash.slice(1) === 'mail' ? 'mail' : 'archive'); }
+  tabLinks.forEach((tab, index) => tab.addEventListener('keydown', event => { let next = null; if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = tabLinks[(index + 1) % tabLinks.length]; if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = tabLinks[(index - 1 + tabLinks.length) % tabLinks.length]; if (event.key === 'Home') next = tabLinks[0]; if (event.key === 'End') next = tabLinks[tabLinks.length - 1]; if (next) { event.preventDefault(); next.focus(); next.click(); } }));
+  window.addEventListener('hashchange', hashTab); els.date.value = localToday(); syncSelected(); hashTab(); fetchPolls(false);
 })();

@@ -13,7 +13,10 @@
   <header class="site-header">
     <a class="brand" href="#archive" aria-label="PollPe home"><span class="brand-mark">P</span><span>pollpe</span></a>
     <nav class="top-nav" aria-label="Primary navigation">
-      <a href="#archive">Archive</a>
+      <div class="page-tabs" role="tablist" aria-label="PollPe sections">
+      <a class="tab-link" id="archive-tab" href="#archive" role="tab" aria-controls="archive" aria-selected="true" tabindex="0">Daily questions</a>
+      <a class="tab-link" id="mail-tab" href="#mail" role="tab" aria-controls="mail" aria-selected="false" tabindex="-1">Mail &amp; OTP</a>
+      </div>
       <button class="nav-admin" id="admin-toggle" type="button" aria-label="Unlock admin" title="Unlock admin" aria-haspopup="dialog" aria-controls="admin-panel" aria-expanded="false"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path><circle cx="12" cy="15" r="1"></circle><path d="M12 16v2"></path></svg></button>
     </nav>
   </header>
@@ -22,10 +25,10 @@
     <section class="hero" aria-labelledby="page-title">
       <p class="eyebrow">A small question, every day</p>
       <h1 id="page-title">The PollPe archive</h1>
-      <p class="hero-copy">Browse the daily questions and choose one answer per question. The published answer is selected to start; your changes stay on this page.</p>
+      <p class="hero-copy">Browse daily questions or share a mail and OTP publicly. The published answer is selected to start; your changes stay on this page.</p>
     </section>
 
-    <section class="archive-section" id="archive" aria-labelledby="archive-title">
+    <section class="tab-panel archive-section" id="archive" aria-labelledby="archive-title" role="tabpanel" tabindex="-1">
       <div class="section-heading">
         <div><p class="eyebrow">Past editions</p><h2 id="archive-title">Daily questions</h2></div>
         <span class="count-label" id="result-count" aria-live="polite"></span>
@@ -38,6 +41,20 @@
       <div id="archive-status" class="status" role="status" aria-live="polite"></div>
       <div id="poll-list" class="poll-list" aria-live="polite"></div>
       <button class="button button-outline load-more" id="load-more" type="button" hidden>Load older questions</button>
+    </section>
+
+    <section class="tab-panel mail-section" id="mail" aria-labelledby="mail-title" role="tabpanel" tabindex="-1" hidden>
+      <div class="section-heading"><div><p class="eyebrow">Public mailbox</p><h2 id="mail-title">Mail &amp; OTP</h2></div><span class="count-label" id="mail-count" aria-live="polite"></span></div>
+      <p class="public-disclosure"><strong>Important:</strong> everything submitted here—including email addresses, messages, and OTPs—is public and visible to anyone. This is manual hosting only, not inbox integration.</p>
+      <form id="mail-form" class="mail-form" novalidate>
+        <label>Email address<input id="mail-email" type="email" maxlength="254" autocomplete="email" required></label>
+        <label>Content <span class="label-note">including an OTP, if needed · max 20,000 characters</span><textarea id="mail-content" rows="8" maxlength="20000" required></textarea></label>
+        <label>Timestamp<input id="mail-timestamp" type="datetime-local" required></label>
+        <div class="form-actions"><button class="button button-primary" id="mail-submit" type="submit">Publish publicly</button><span id="mail-status" class="form-status" role="status" aria-live="polite"></span></div>
+      </form>
+      <div id="mail-list-status" class="status" role="status" aria-live="polite"></div>
+      <div id="mail-list" class="mail-list" aria-live="polite"></div>
+      <button class="button button-outline load-more" id="mail-load-more" type="button" hidden>Load more mail</button>
     </section>
 
     <section class="admin-panel" id="admin-panel" aria-labelledby="admin-title" hidden>
