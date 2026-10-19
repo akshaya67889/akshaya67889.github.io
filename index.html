@@ -7,6 +7,8 @@
   <title>PollPe · Daily questions</title>
   <link rel="stylesheet" href="style.css?v=daily-status-20261020">
   <link rel="stylesheet" href="daily-status.css?v=daily-status-20261020">
+  <link rel="stylesheet" href="neumorphic.css?v=soft-ui-20261020">
+  <meta name="theme-color" content="#e4ebef">
   <script src="config.js" defer></script>
   <script src="app.js?v=daily-status-20261020" defer></script>
   <script src="coins.js?v=daily-status-20261020" defer></script>
@@ -20,9 +22,13 @@
 
   <main>
     <section class="hero" aria-labelledby="page-title">
-      <p class="eyebrow">A small question, every day</p>
-      <h1 id="page-title">Today on PollPe</h1>
-      <p class="hero-copy">View today’s admin-selected answers, share a mail and OTP, track account coins, or check daily completion. Daily question answers are view-only; only the admin can change them.</p>
+      <div class="hero-content">
+        <p class="eyebrow">Your daily space</p>
+        <h1 id="page-title">Today on <span>PollPe.</span></h1>
+        <p class="hero-copy">A little clarity, every day. View today’s admin-selected answers, share Mail &amp; OTP, and keep your coins in sync. Question answers are view-only; only the admin can change them.</p>
+        <div class="hero-meta"><span class="soft-chip">A fresh start at midnight IST</span><span class="soft-chip">Four tabs. One simple space.</span></div>
+      </div>
+      <div class="hero-emblem" aria-hidden="true"><div class="hero-emblem-ring"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m7 12 3 3 7-7"/><path d="M19 13v5a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h7"/></svg></div></div>
     </section>
 
     <section class="tab-panel archive-section" id="archive" aria-labelledby="archive-title" role="tabpanel" tabindex="-1">
