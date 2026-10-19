@@ -8,6 +8,7 @@
   const accountStatus = $('coins-account-status'), status = $('coins-status');
   let context = null, contextEmail = '', lookupVersion = 0, saving = false, baselineUnlocked = false;
   let historyOffset = 0, historyBusy = false, historyLoaded = false;
+  let historyRequest = 0, historyController = null, searchTimer = null;
   const normalizedEmail = () => email.value.trim().toLowerCase();
   const validEmail = value => value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   const whole = value => /^\d+$/.test(value) && Number.isSafeInteger(Number(value));
@@ -30,7 +31,7 @@
     lookupVersion += 1; context = null; contextEmail = ''; baselineUnlocked = false;
     yesterday.value = ''; yesterday.readOnly = true; credited.value = ''; credited.disabled = true;
     total.value = ''; submit.disabled = true; editBalance.disabled = true; editBalance.textContent = 'Edit starting balance'; editBalance.setAttribute('aria-pressed', 'false');
-    accountStatus.textContent = 'Enter an email and load its previous balance.';
+    accountStatus.textContent = 'Enter an email and load its current balance.';
     if (!saving) lookup.disabled = false;
   }
   function calculate() {
@@ -45,7 +46,7 @@
     invalidate(); message('');
     if (!validEmail(value)) { accountStatus.textContent = 'Enter a valid PollPe account email address.'; return; }
     const version = lookupVersion;
-    lookup.disabled = true; accountStatus.textContent = 'Loading the previous balance…';
+    lookup.disabled = true; accountStatus.textContent = 'Loading the current balance…';
     try {
       const result = await rpc('pollpe_coin_context', { p_email: value });
       if (version !== lookupVersion || value !== normalizedEmail()) return;
@@ -56,7 +57,7 @@
       credited.value = existing ? String(existing.credited_today) : '';
       total.value = existing ? String(existing.total_today) : '';
       setBaselineEditing(!result.has_history && !existing);
-      accountStatus.textContent = `Tracking day: ${result.tracking_date} (India time). ` + (existing ? `Already saved today: ${number(existing.credited_today)} credited; ${number(existing.total_today)} total. Edit the starting balance or credited amount to replace today's entry.` : result.has_history ? 'Previous balance loaded. Enter the coins credited today, or edit the starting balance.' : 'New account: opening balance starts at 0. Set its starting balance if needed, then enter today’s credited coins.');
+      accountStatus.textContent = `Tracking day: ${result.tracking_date} (India time). ` + (existing ? `Already saved today: ${number(existing.credited_today)} credited; ${number(existing.total_today)} total. Edit the starting balance or credited amount to replace today's entry.` : result.has_history ? 'Current balance loaded. Enter the coins credited today, or edit the starting balance.' : 'New account: opening balance starts at 0. Set its starting balance if needed, then enter today’s credited coins.');
       calculate();
     } catch (error) {
       if (version === lookupVersion) { invalidate(); accountStatus.textContent = error.message; lookup.disabled = false; }
@@ -76,7 +77,7 @@
       yesterday.value = String(row.yesterday_coins); credited.value = String(row.credited_today); total.value = String(row.total_today);
       accountStatus.textContent = `Saved for ${row.tracking_date} (India time): ${number(row.credited_today)} credited; ${number(row.total_today)} total. You can edit the starting balance or credited amount and save a replacement.`;
       message('Coin balance saved publicly.');
-      await loadHistory(false);
+      await loadHistory(false, true);
     } catch (error) { message(error.message, true); invalidate(); }
     finally {
       saving = false; lookup.disabled = false; email.disabled = false;
@@ -87,7 +88,8 @@
   }
   function renderEntry(row) {
     const card = document.createElement('article'); card.className = 'mail-card';
-    const title = document.createElement('h4'); title.className = 'mail-meta'; title.textContent = `${row.email_address} · ${row.tracking_date} (India time)`;
+    const title = document.createElement('h4'); title.className = 'mail-meta'; title.textContent = row.email_address;
+    const day = document.createElement('p'); day.className = 'timestamp-note'; day.textContent = `Last tracking day: ${row.tracking_date} (India time)`;
     const values = document.createElement('dl'); values.className = 'coin-values';
     [['Total coins yesterday', row.yesterday_coins], ['Coins credited today', row.credited_today], ['Total coins today', row.total_today]].forEach(([label, value]) => {
       const group = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
@@ -97,31 +99,59 @@
     const actions = document.createElement('div'); actions.className = 'form-actions';
     const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'button button-quiet'; edit.textContent = 'Edit balance';
     edit.addEventListener('click', () => { if (saving) return; email.value = row.email_address; loadAccount().then(() => { $('coins-form').scrollIntoView({ behavior: 'smooth', block: 'start' }); email.focus(); }); });
-    actions.append(edit); card.append(title, values, timestamp, actions); $('coins-list').append(card);
+    actions.append(edit); card.append(title, day, values, timestamp, actions); $('coins-list').append(card);
   }
-  async function loadHistory(append = false) {
-    if (historyBusy) return;
+  function escapeIlike(value) {
+    // PostgREST uses * as the wildcard alias for %, while \, %, and _ have
+    // pattern meaning. Escape them before URLSearchParams encodes the query.
+    return value.replace(/\\/g, '\\\\').replace(/[\%_*]/g, char => `\\${char}`).replace(/"/g, '\\"');
+  }
+  function searchValue() { return $('coins-email-filter').value.trim(); }
+  async function loadHistory(append = false, force = false) {
+    if (historyBusy && !force) return;
+    if (historyController) historyController.abort();
+    const request = ++historyRequest;
+    const controller = new AbortController(); historyController = controller;
     historyBusy = true;
     const listStatus = $('coins-list-status'), more = $('coins-load-more');
+    const filter = searchValue();
     if (!append) { historyOffset = 0; $('coins-list').replaceChildren(); }
-    listStatus.className = 'status'; listStatus.textContent = 'Loading coin history…'; more.hidden = true;
+    listStatus.className = 'status'; listStatus.textContent = 'Loading current balances…'; more.hidden = true; more.disabled = true;
     try {
       const params = new URLSearchParams({ select: 'id,email_address,tracking_date,yesterday_coins,credited_today,total_today,created_at,updated_at', order: 'tracking_date.desc,updated_at.desc,id.desc', limit: '50', offset: String(historyOffset) });
-      const response = await fetch(`${base}/rest/v1/pollpe_coin_entries?${params}`, { headers: headers() });
-      if (!response.ok) throw new Error(`Could not load history (${response.status}). Use Refresh history to retry.`);
-      const rows = await response.json(); rows.forEach(renderEntry); historyOffset += rows.length; historyLoaded = true;
-      listStatus.textContent = historyOffset ? '' : 'No coin balances saved yet. Add the first account above.';
-      listStatus.className = historyOffset ? 'status' : 'status empty'; more.hidden = rows.length < 50;
-    } catch (error) { listStatus.className = 'status error'; listStatus.textContent = error.message; }
-    finally { historyBusy = false; }
+      if (filter) params.set('email_address', `ilike.*${escapeIlike(filter)}*`);
+      const response = await fetch(`${base}/rest/v1/pollpe_coin_entries?${params}`, { headers: headers(), signal: controller.signal });
+      if (!response.ok) throw new Error(`Could not load current balances (${response.status}). Use Refresh balances to retry.`);
+      const rows = await response.json();
+      if (request !== historyRequest) return;
+      rows.forEach(renderEntry); historyOffset += rows.length; historyLoaded = true;
+      listStatus.textContent = historyOffset ? '' : (filter ? 'No current balance matches that email search.' : 'No current balances saved yet. Add the first account above.');
+      listStatus.className = historyOffset ? 'status' : 'status empty'; more.hidden = rows.length < 50; more.disabled = false;
+    } catch (error) {
+      if (error.name === 'AbortError' || request !== historyRequest) return;
+      listStatus.className = 'status error'; listStatus.textContent = error.message; more.disabled = false;
+    } finally {
+      if (request === historyRequest) { historyBusy = false; historyController = null; }
+    }
   }
   email.addEventListener('input', () => { invalidate(); message(''); });
+  $('coins-email-filter').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    // Invalidate the previous request immediately, not only when the debounce
+    // fires. Otherwise an old response can paint stale rows during the 200ms
+    // debounce window (or leave an aborted request marked busy).
+    historyRequest += 1;
+    if (historyController) historyController.abort();
+    historyController = null;
+    historyBusy = false;
+    searchTimer = setTimeout(() => loadHistory(false, true), 200);
+  });
   email.addEventListener('change', () => { if (validEmail(normalizedEmail())) loadAccount(); });
   lookup.addEventListener('click', loadAccount);
   editBalance.addEventListener('click', () => setBaselineEditing(!baselineUnlocked));
   yesterday.addEventListener('input', calculate); credited.addEventListener('input', calculate);
   $('coins-form').addEventListener('submit', save);
-  $('coins-refresh').addEventListener('click', () => loadHistory(false));
+  $('coins-refresh').addEventListener('click', () => loadHistory(false, true));
   $('coins-load-more').addEventListener('click', () => loadHistory(true));
   function enterTab() { if (window.location.hash === '#coins' && !historyLoaded) loadHistory(false); }
   window.addEventListener('hashchange', enterTab); enterTab();
