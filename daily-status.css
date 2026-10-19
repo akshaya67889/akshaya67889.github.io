@@ -1,0 +1,25 @@
+#daily-status{max-width:1160px;margin:auto;padding:0 30px 100px}
+#daily-status .daily-status-toolbar{display:flex;align-items:center;gap:12px;margin:0 0 22px;max-width:900px}
+#daily-status .completion-filter{display:grid;gap:7px;font-size:.82rem;font-weight:700;max-width:900px;margin:20px 0}
+#daily-status .completion-summary{color:var(--purple-dark);font-size:.9rem;font-weight:700;margin:20px 0}
+#daily-status #completion-search{flex:1;min-width:0;border:1px solid var(--line);border-radius:7px;background:var(--paper);padding:11px 13px;outline:0}
+#daily-status #completion-search:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(104,70,165,.12)}
+#daily-status #completion-refresh{white-space:nowrap}
+#daily-status .daily-status-message{color:var(--muted);font-size:.92rem;padding:20px 0;min-height:1.5em}
+#daily-status .daily-status-message:empty{display:none}
+#daily-status .daily-status-message.error{color:#a04040}
+#daily-status .daily-status-message.empty{padding:48px 16px;text-align:center;background:var(--lavender);border-radius:10px}
+#daily-status .completion-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:900px}
+#daily-status .daily-status-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;align-items:start;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow);min-width:0}
+#daily-status .daily-status-email{margin:0;min-width:0;color:var(--ink);font-size:.98rem;font-weight:700;overflow-wrap:anywhere}
+#daily-status .daily-status-badge{justify-self:end;border-radius:999px;padding:4px 9px;font-size:.68rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+#daily-status .daily-status-badge.is-completed{background:#e5f2eb;color:var(--green)}
+#daily-status .daily-status-badge.is-pending{background:#f4e9dc;color:#8a5a32}
+#daily-status .daily-status-note{grid-column:1/-1;margin:0;color:var(--muted);font-size:.78rem;line-height:1.5}
+@media(max-width:700px){
+  #daily-status{padding-left:18px;padding-right:18px}
+  #daily-status .daily-status-toolbar{align-items:stretch;flex-direction:column}
+  #daily-status #completion-refresh{align-self:flex-start}
+  #daily-status .completion-list{grid-template-columns:1fr}
+  #daily-status .daily-status-card{padding:16px}
+}

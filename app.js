@@ -16,7 +16,6 @@
   let mailOffset = 0;
   let mailHasMore = false;
   let mailRows = [];
-  const answerSelections = new Map();
 
   const $ = (id) => document.getElementById(id);
   const els = { list: $('poll-list'), status: $('archive-status'), count: $('result-count'), load: $('load-more'), today: $('today-date'), admin: $('admin-panel'), adminToggle: $('admin-toggle'), adminClose: $('admin-close'), form: $('poll-form'), key: $('publishing-key'), date: $('poll-date'), question: $('poll-question'), options: $('poll-options'), addOption: $('add-option'), optionCount: $('option-count'), labelStyle: $('option-label-style'), selected: $('poll-selected'), note: $('poll-note'), publish: $('publish-button'), cancel: $('cancel-edit'), formStatus: $('form-status'), dialog: $('unlock-dialog'), unlockForm: $('unlock-form'), unlockButton: $('unlock-button'), unlockStatus: $('unlock-status'), mailForm: $('mail-form'), mailEmail: $('mail-email'), mailContent: $('mail-content'), mailSubmit: $('mail-submit'), mailStatus: $('mail-status'), mailList: $('mail-list'), mailListStatus: $('mail-list-status'), mailCount: $('mail-count'), mailLoad: $('mail-load-more') };
@@ -90,7 +89,7 @@
   async function fetchPolls(append = false) {
     if (!configured()) { setStatus('Add your Supabase URL and public key in config.js to load today’s questions.', 'error'); return; }
     const day = localToday(); const request = ++pollRequest;
-    if (day !== displayedDay) { append = false; displayedDay = day; answerSelections.clear(); }
+    if (day !== displayedDay) { append = false; displayedDay = day; }
     syncDayLabel();
     if (!append) { offset = 0; allLoaded = []; els.list.replaceChildren(); }
     setStatus('Loading today’s questions…'); els.load.hidden = true;
@@ -110,7 +109,7 @@
   async function refreshDay() {
     const day = localToday();
     if (day === displayedDay) return;
-    displayedDay = day; answerSelections.clear(); allLoaded = []; offset = 0; hasMore = false;
+    displayedDay = day; allLoaded = []; offset = 0; hasMore = false;
     resetForm(); syncDayLabel(); render();
     await fetchPolls(false);
   }
@@ -131,26 +130,15 @@
     const question = document.createElement('h3'); question.textContent = row.question || ''; card.append(question);
     const choices = Array.isArray(row.options) ? row.options : [];
     const answers = document.createElement('fieldset'); answers.className = 'answer-list';
-    const legend = document.createElement('legend'); legend.className = 'sr-only'; legend.textContent = `Choose one answer: ${row.question || 'Question'}`; answers.append(legend);
-    const signature = JSON.stringify([choices, row.selected_option]);
-    const previous = answerSelections.get(row.id);
+    answers.disabled = true;
+    const legend = document.createElement('legend'); legend.className = 'sr-only'; legend.textContent = `Admin-selected answer (view only): ${row.question || 'Question'}`; answers.append(legend);
     const publishedIndex = row.selected_option == null || row.selected_option === '' ? -1 : Number(row.selected_option);
-    const selectedIndex = previous && previous.signature === signature ? previous.index : publishedIndex;
     choices.forEach((choice, index) => {
       const label = document.createElement('label'); label.className = 'answer';
-      const input = document.createElement('input'); input.type = 'radio'; input.name = `answer-${row.id}`; input.value = String(index); input.checked = index === selectedIndex;
+      const input = document.createElement('input'); input.type = 'radio'; input.name = `answer-${row.id}`; input.value = String(index); input.checked = index === publishedIndex; input.disabled = true;
       const text = document.createElement('span'); text.className = 'answer-text'; const serial = optionSerial(index, row.option_label_style || 'none'); text.textContent = `${serial ? serial + '. ' : ''}${choice}`;
-      const tag = document.createElement('span'); tag.className = 'answer-tag'; tag.textContent = 'Selected'; tag.setAttribute('aria-hidden', 'true');
+      const tag = document.createElement('span'); tag.className = 'answer-tag'; tag.textContent = 'Admin selected'; tag.setAttribute('aria-hidden', 'true');
       label.classList.toggle('selected', input.checked); tag.hidden = !input.checked;
-      input.addEventListener('change', () => {
-        if (!input.checked) return;
-        answerSelections.set(row.id, { index, signature });
-        answers.querySelectorAll('.answer').forEach(answer => {
-          const checked = answer.querySelector('input').checked;
-          answer.classList.toggle('selected', checked);
-          answer.querySelector('.answer-tag').hidden = !checked;
-        });
-      });
       label.append(input, text, tag); answers.append(label);
     });
     card.append(answers);
@@ -234,7 +222,7 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshDay(); scheduleRollover(); } });
   window.addEventListener('focus', () => { refreshDay(); scheduleRollover(); });
   els.mailForm.addEventListener('submit', submitMail); els.mailLoad.addEventListener('click', () => fetchMail(true));
-  const tabLinks = [...document.querySelectorAll('.tab-link')]; const panels = { archive: $('archive'), mail: $('mail'), coins: $('coins') };
+  const tabLinks = [...document.querySelectorAll('.tab-link')]; const panels = { archive: $('archive'), mail: $('mail'), coins: $('coins'), 'daily-status': $('daily-status') };
   function activateTab(name, focus = false) { const selected = Object.hasOwn(panels, name) ? name : 'archive'; if (selected !== 'archive' && publishingKey) lockAdmin(); tabLinks.forEach(tab => { const active = tab.id === `${selected}-tab`; tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1; }); Object.entries(panels).forEach(([key, panel]) => { panel.hidden = key !== selected; }); if (selected === 'mail' && !mailRows.length) fetchMail(false); if (focus) document.getElementById(`${selected}-tab`).focus(); }
   function hashTab() { activateTab(window.location.hash.slice(1)); }
   tabLinks.forEach((tab, index) => tab.addEventListener('keydown', event => { let next = null; if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = tabLinks[(index + 1) % tabLinks.length]; if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = tabLinks[(index - 1 + tabLinks.length) % tabLinks.length]; if (event.key === 'Home') next = tabLinks[0]; if (event.key === 'End') next = tabLinks[tabLinks.length - 1]; if (next) { event.preventDefault(); if (window.location.hash !== next.hash) window.addEventListener('hashchange', () => next.focus({ preventScroll: true }), { once: true }); next.focus(); next.click(); } }));

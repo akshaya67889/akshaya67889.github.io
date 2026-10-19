@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="PollPe — today’s daily questions.">
   <title>PollPe · Daily questions</title>
-  <link rel="stylesheet" href="style.css?v=options-20261020">
+  <link rel="stylesheet" href="style.css?v=daily-status-20261020">
+  <link rel="stylesheet" href="daily-status.css?v=daily-status-20261020">
   <script src="config.js" defer></script>
-  <script src="app.js?v=options-20261020" defer></script>
-  <script src="coins.js?v=coins-tracker-20261020-2" defer></script>
+  <script src="app.js?v=daily-status-20261020" defer></script>
+  <script src="coins.js?v=daily-status-20261020" defer></script>
+  <script src="daily-status.js?v=daily-status-20261020" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -20,7 +22,7 @@
     <section class="hero" aria-labelledby="page-title">
       <p class="eyebrow">A small question, every day</p>
       <h1 id="page-title">Today on PollPe</h1>
-      <p class="hero-copy">See today’s daily questions, share a mail and OTP, or track account coins publicly. The published answer is selected to start; your changes stay on this page.</p>
+      <p class="hero-copy">View today’s admin-selected answers, share a mail and OTP, track account coins, or check daily completion. Daily question answers are view-only; only the admin can change them.</p>
     </section>
 
     <section class="tab-panel archive-section" id="archive" aria-labelledby="archive-title" role="tabpanel" tabindex="-1">
@@ -72,6 +74,16 @@
       <button class="button button-outline load-more" id="coins-load-more" type="button" hidden>Load more balances</button>
     </section>
 
+    <section class="tab-panel daily-status-section" id="daily-status" aria-labelledby="completion-title" role="tabpanel" tabindex="-1" hidden>
+      <div class="section-heading"><div><p class="eyebrow" id="completion-date"></p><h2 id="completion-title">Daily coin status</h2></div><button class="button button-quiet" id="completion-refresh" type="button">Refresh status</button></div>
+      <p class="public-disclosure">All email addresses already in the coins tracker appear here. <strong>Completed</strong> means coins were submitted for today in India time, including a submission of 0 coins. Otherwise, the status is <strong>Pending</strong>. Status resets automatically at <strong>12:00 AM IST</strong>; saved balances are kept.</p>
+      <p class="timestamp-note">Public, view-only list. Updates after a coin submission, when you open this tab, and every minute while this tab is visible.</p>
+      <p id="completion-summary" class="completion-summary" aria-live="polite"></p>
+      <label class="completion-filter" for="completion-search">Search PollPe email addresses<input id="completion-search" type="search" maxlength="254" autocomplete="off" placeholder="Search email address"></label>
+      <div id="completion-message" class="status" role="status" aria-live="polite"></div>
+      <div id="completion-list" class="completion-list" role="list" aria-label="Daily coin completion by email"></div>
+    </section>
+
     <section class="admin-panel" id="admin-panel" aria-labelledby="admin-title" hidden>
       <div class="section-heading"><div><p class="eyebrow">Private publishing desk</p><h2 id="admin-title">Publish a question</h2></div><button class="close-button" id="admin-close" type="button" aria-label="Close admin panel">×</button></div>
       <p class="admin-intro">Admin unlocked for up to one hour. Closing this panel locks it again. Your password is never saved to this device.</p>
@@ -106,6 +118,10 @@
       <a class="tab-link" id="coins-tab" href="#coins" role="tab" aria-controls="coins" aria-selected="false" tabindex="-1" aria-label="PollPe coins tracker">
         <span class="nav-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path class="icon-tint" d="M3 14v8c0 2 4 3.5 8.5 3.5S20 24 20 22v-8Z"/><ellipse cx="11.5" cy="14" rx="8.5" ry="3.5"/><path d="M3 18c0 2 4 3.5 8.5 3.5S20 20 20 18"/><circle cx="18.5" cy="9.5" r="7" class="icon-badge"/><path d="M18.5 6v7M21 7h-3.5a1.5 1.5 0 0 0 0 3H19a1.5 1.5 0 0 1 0 3h-3"/></svg></span>
         <span class="nav-label">Coins tracker</span>
+      </a>
+      <a class="tab-link" id="daily-status-tab" href="#daily-status" role="tab" aria-controls="daily-status" aria-selected="false" tabindex="-1">
+        <span class="nav-icon"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect class="icon-tint" x="5" y="4" width="18" height="21" rx="3"/><path d="M10 3h8v4h-8zM9 13l1.5 1.5L13 12M16 13h4M9 20h4M16 20h4"/></svg></span>
+        <span class="nav-label">Daily status</span>
       </a>
     </div>
   </nav>

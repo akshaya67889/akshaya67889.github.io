@@ -77,6 +77,7 @@
       yesterday.value = String(row.yesterday_coins); credited.value = String(row.credited_today); total.value = String(row.total_today);
       accountStatus.textContent = `Saved for ${row.tracking_date} (India time): ${number(row.credited_today)} credited; ${number(row.total_today)} total. You can edit the starting balance or credited amount and save a replacement.`;
       message('Coin balance saved publicly.');
+      window.dispatchEvent(new CustomEvent('pollpe:coins-saved'));
       await loadHistory(false, true);
     } catch (error) { message(error.message, true); invalidate(); }
     finally {

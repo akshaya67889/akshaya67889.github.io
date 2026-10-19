@@ -87,3 +87,10 @@ html{scroll-padding-bottom:calc(124px + env(safe-area-inset-bottom,0px))}
 .option-row .remove-option:disabled{opacity:.4}
 .option-field input{min-width:0}
 @media(max-width:700px){.option-editor{padding:12px}.option-row{gap:4px}.option-row .remove-option{padding:10px 7px;font-size:.78rem}.option-field input,.option-style-label select{font-size:16px}}
+
+/* Four public sections, with non-interactive published answers. */
+.page-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+label.answer{cursor:default}
+.answer input[type="radio"]:disabled{opacity:1;cursor:default}
+.answer-tag{white-space:normal;text-align:right;max-width:6.5em}
+@media(max-width:400px){.bottom-nav{width:calc(100% - 16px);padding:5px}.page-tabs{gap:2px}.tab-link{padding-left:2px;padding-right:2px}.nav-label{font-size:.64rem;white-space:normal;text-align:center;min-height:2.6em;display:flex;align-items:center}.nav-icon{height:30px}}
