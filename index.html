@@ -7,7 +7,7 @@
   <title>PollPe · Daily questions</title>
   <link rel="stylesheet" href="style.css">
   <script src="config.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=server-timestamps-20261019" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -49,7 +49,7 @@
       <form id="mail-form" class="mail-form" novalidate>
         <label>Email address<input id="mail-email" type="email" maxlength="254" autocomplete="email" required></label>
         <label>Content <span class="label-note">including an OTP, if needed · max 20,000 characters</span><textarea id="mail-content" rows="8" maxlength="20000" required></textarea></label>
-        <label>Timestamp<input id="mail-timestamp" type="datetime-local" required></label>
+        <p class="timestamp-note"><strong>Timestamp:</strong> Set automatically when you publish (server time). It cannot be edited.</p>
         <div class="form-actions"><button class="button button-primary" id="mail-submit" type="submit">Publish publicly</button><span id="mail-status" class="form-status" role="status" aria-live="polite"></span></div>
       </form>
       <div id="mail-list-status" class="status" role="status" aria-live="polite"></div>
