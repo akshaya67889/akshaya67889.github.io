@@ -22,7 +22,7 @@
     <section class="hero" aria-labelledby="page-title">
       <p class="eyebrow">A small question, every day</p>
       <h1 id="page-title">The PollPe archive</h1>
-      <p class="hero-copy">Browse the questions that made it into the world, and see which answer was selected.</p>
+      <p class="hero-copy">Browse the daily questions and choose one answer per question. The published answer is selected to start; your changes stay on this page.</p>
     </section>
 
     <section class="archive-section" id="archive" aria-labelledby="archive-title">
@@ -51,7 +51,7 @@
         <label>Question<textarea id="poll-question" rows="3" maxlength="500" required placeholder="What are you curious about today?"></textarea></label>
         <label>Answer options <span class="label-note">one per line · 2–6 options</span><textarea id="poll-options" rows="6" maxlength="1000" required placeholder="Option one\nOption two\nOption three"></textarea></label>
         <div class="form-grid">
-          <label>Selected answer<select id="poll-selected" required disabled><option value="">Add options above</option></select></label>
+          <label>Selected answer <span class="label-note">choose exactly one option</span><select id="poll-selected" required disabled><option value="">Add options above</option></select></label>
           <label>Note <span class="label-note">optional</span><input id="poll-note" type="text" maxlength="300" placeholder="A little context, if useful"></label>
         </div>
         <div class="form-actions"><button class="button button-primary" id="publish-button" type="submit">Publish question</button><button class="button button-quiet" id="cancel-edit" type="button" hidden>Cancel edit</button><span id="form-status" class="form-status" role="status" aria-live="polite"></span></div>

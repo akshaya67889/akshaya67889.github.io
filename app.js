@@ -9,6 +9,7 @@
   let allLoaded = [];
   let editingId = null;
   let isBusy = false;
+  const answerSelections = new Map();
 
   const $ = (id) => document.getElementById(id);
   const els = { list: $('poll-list'), status: $('archive-status'), count: $('result-count'), load: $('load-more'), search: $('search-input'), month: $('month-input'), clear: $('clear-filters'), admin: $('admin-panel'), adminToggle: $('admin-toggle'), adminClose: $('admin-close'), form: $('poll-form'), key: $('publishing-key'), date: $('poll-date'), question: $('poll-question'), options: $('poll-options'), selected: $('poll-selected'), note: $('poll-note'), publish: $('publish-button'), cancel: $('cancel-edit'), formStatus: $('form-status') };
@@ -46,15 +47,38 @@
     const card = document.createElement('article'); card.className = 'poll-card';
     const date = document.createElement('div'); date.className = 'poll-card-date'; date.textContent = formatDate(row.poll_date); card.append(date);
     const question = document.createElement('h3'); question.textContent = row.question || ''; card.append(question);
-    const answers = document.createElement('ul'); answers.className = 'answer-list'; const choices = Array.isArray(row.options) ? row.options : [];
-    choices.forEach((choice, index) => { const li = document.createElement('li'); li.className = `answer ${index === Number(row.selected_option) ? 'selected' : ''}`.trim(); const text = document.createElement('span'); text.textContent = choice; li.append(text); if (index === Number(row.selected_option)) { const tag = document.createElement('span'); tag.className = 'answer-tag'; tag.textContent = 'Selected'; li.append(tag); } answers.append(li); }); card.append(answers);
+    const choices = Array.isArray(row.options) ? row.options : [];
+    const answers = document.createElement('fieldset'); answers.className = 'answer-list';
+    const legend = document.createElement('legend'); legend.className = 'sr-only'; legend.textContent = `Choose one answer: ${row.question || 'Question'}`; answers.append(legend);
+    const signature = JSON.stringify([choices, row.selected_option]);
+    const previous = answerSelections.get(row.id);
+    const publishedIndex = row.selected_option == null || row.selected_option === '' ? -1 : Number(row.selected_option);
+    const selectedIndex = previous && previous.signature === signature ? previous.index : publishedIndex;
+    choices.forEach((choice, index) => {
+      const label = document.createElement('label'); label.className = 'answer';
+      const input = document.createElement('input'); input.type = 'radio'; input.name = `answer-${row.id}`; input.value = String(index); input.checked = index === selectedIndex;
+      const text = document.createElement('span'); text.className = 'answer-text'; text.textContent = choice;
+      const tag = document.createElement('span'); tag.className = 'answer-tag'; tag.textContent = 'Selected'; tag.setAttribute('aria-hidden', 'true');
+      label.classList.toggle('selected', input.checked); tag.hidden = !input.checked;
+      input.addEventListener('change', () => {
+        if (!input.checked) return;
+        answerSelections.set(row.id, { index, signature });
+        answers.querySelectorAll('.answer').forEach(answer => {
+          const checked = answer.querySelector('input').checked;
+          answer.classList.toggle('selected', checked);
+          answer.querySelector('.answer-tag').hidden = !checked;
+        });
+      });
+      label.append(input, text, tag); answers.append(label);
+    });
+    card.append(answers);
     if (row.note) { const note = document.createElement('p'); note.className = 'poll-note'; note.textContent = row.note; card.append(note); }
     if (!els.admin.hidden) { const actions = document.createElement('div'); actions.className = 'card-actions'; const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Edit'; edit.addEventListener('click', () => beginEdit(row)); const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', () => deletePoll(row)); actions.append(edit, remove); card.append(actions); }
     els.list.append(card);
   }
   function beginEdit(row) { editingId = row.id; els.date.value = row.poll_date || ''; els.question.value = row.question || ''; els.options.value = (Array.isArray(row.options) ? row.options : []).join('\n'); syncSelected(); els.selected.value = String(row.selected_option ?? 0); els.note.value = row.note || ''; els.publish.textContent = 'Save changes'; els.cancel.hidden = false; els.form.scrollIntoView({ behavior: 'smooth', block: 'start' }); setFormStatus('Editing this question.'); }
   function resetForm() { editingId = null; els.form.reset(); els.date.value = localToday(); syncSelected(); els.publish.textContent = 'Publish question'; els.cancel.hidden = true; setFormStatus(''); }
-  async function publish(event) { event.preventDefault(); if (isBusy) return; const values = optionValues(); if (!els.key.value.trim() || !els.date.value || !els.question.value.trim() || values.length < 2 || values.length > 6 || els.selected.value === '') { setFormStatus('Please complete the key, date, question, and 2–6 options.', 'error'); return; } isBusy = true; els.publish.disabled = true; setFormStatus(editingId ? 'Saving…' : 'Publishing…'); const body = { p_key: els.key.value, p_id: editingId, p_date: els.date.value, p_question: els.question.value.trim(), p_options: values, p_selected: Number(els.selected.value), p_note: els.note.value.trim() };
+  async function publish(event) { event.preventDefault(); if (isBusy) return; const values = optionValues(); if (!els.key.value.trim() || !els.date.value || !els.question.value.trim() || values.length < 2 || values.length > 6 || els.selected.value === '' || !Number.isInteger(Number(els.selected.value)) || Number(els.selected.value) < 0 || Number(els.selected.value) >= values.length) { setFormStatus('Please complete the key, date, question, and 2–6 options.', 'error'); return; } isBusy = true; els.publish.disabled = true; setFormStatus(editingId ? 'Saving…' : 'Publishing…'); const body = { p_key: els.key.value, p_id: editingId, p_date: els.date.value, p_question: els.question.value.trim(), p_options: values, p_selected: Number(els.selected.value), p_note: els.note.value.trim() };
     try { const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_publish`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json', Prefer: 'return=representation' }), body: JSON.stringify(body) }); if (!response.ok) throw new Error('Publishing failed. Check the key and try again.'); resetForm(); setFormStatus('Published successfully.'); await fetchPolls(false); } catch (error) { setFormStatus(error.message || 'Could not publish. Please try again.', 'error'); } finally { isBusy = false; els.publish.disabled = false; }
   }
   async function deletePoll(row) { if (isBusy || !window.confirm(`Delete the question from ${formatDate(row.poll_date)}? This cannot be undone.`)) return; const key = els.key.value; if (!key) { setFormStatus('Enter the publishing key before deleting.', 'error'); return; } isBusy = true; setFormStatus('Deleting…'); try { const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_delete`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ p_key: key, p_id: row.id }) }); if (!response.ok) throw new Error('Delete failed. Check the key and try again.'); setFormStatus('Deleted.'); await fetchPolls(false); } catch (error) { setFormStatus(error.message || 'Could not delete. Please try again.', 'error'); } finally { isBusy = false; } }
