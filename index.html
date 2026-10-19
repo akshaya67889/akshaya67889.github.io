@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <script src="config.js" defer></script>
   <script src="app.js?v=coins-tracker-20261019" defer></script>
-  <script src="coins.js?v=coins-tracker-20261019" defer></script>
+  <script src="coins.js?v=coins-tracker-20261020" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -71,7 +71,7 @@
           <label>Total coins yesterday<input id="coins-yesterday" type="number" min="0" max="9007199254740991" step="1" readonly required aria-describedby="coins-baseline-note"></label>
           <label>Coins credited today<input id="coins-credited" type="number" min="0" max="9007199254740991" step="1" inputmode="numeric" placeholder="Enter today's credited coins" required disabled></label>
         </div>
-        <p id="coins-baseline-note" class="timestamp-note">Previous balances are filled automatically. For a new account, you can set its opening balance once.</p>
+        <div class="form-actions"><button id="coins-edit-balance" class="button button-outline" type="button" disabled aria-pressed="false">Edit starting balance</button><span id="coins-baseline-note" class="timestamp-note">Previous balances are filled automatically. Load an account, then use Edit starting balance whenever you need to correct its baseline.</span></div>
         <label>Total coins today <span class="label-note">calculated automatically: yesterday + credited today</span><input id="coins-total" type="number" readonly aria-readonly="true" aria-live="polite"></label>
         <p class="timestamp-note">Days use India time (Asia/Kolkata). After a gap, the last saved balance carries forward. Saving again today replaces today's credited amount; it does not add it twice. Dates and timestamps are set by the server.</p>
         <div class="form-actions"><button class="button button-primary" id="coins-submit" type="submit" disabled>Save coins publicly</button><span id="coins-status" class="form-status" role="status" aria-live="polite"></span></div>
