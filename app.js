@@ -9,10 +9,12 @@
   let allLoaded = [];
   let editingId = null;
   let isBusy = false;
+  let publishingKey = '';
+  let unlockAttempt = 0;
   const answerSelections = new Map();
 
   const $ = (id) => document.getElementById(id);
-  const els = { list: $('poll-list'), status: $('archive-status'), count: $('result-count'), load: $('load-more'), search: $('search-input'), month: $('month-input'), clear: $('clear-filters'), admin: $('admin-panel'), adminToggle: $('admin-toggle'), adminClose: $('admin-close'), form: $('poll-form'), key: $('publishing-key'), date: $('poll-date'), question: $('poll-question'), options: $('poll-options'), selected: $('poll-selected'), note: $('poll-note'), publish: $('publish-button'), cancel: $('cancel-edit'), formStatus: $('form-status') };
+  const els = { list: $('poll-list'), status: $('archive-status'), count: $('result-count'), load: $('load-more'), search: $('search-input'), month: $('month-input'), clear: $('clear-filters'), admin: $('admin-panel'), adminToggle: $('admin-toggle'), adminClose: $('admin-close'), form: $('poll-form'), key: $('publishing-key'), date: $('poll-date'), question: $('poll-question'), options: $('poll-options'), selected: $('poll-selected'), note: $('poll-note'), publish: $('publish-button'), cancel: $('cancel-edit'), formStatus: $('form-status'), dialog: $('unlock-dialog'), unlockForm: $('unlock-form'), unlockButton: $('unlock-button'), unlockStatus: $('unlock-status') };
 
   function setStatus(text, kind = '') { els.status.textContent = text; els.status.className = `status ${kind}`.trim(); }
   function setFormStatus(text, kind = '') { els.formStatus.textContent = text; els.formStatus.className = `form-status ${kind}`.trim(); }
@@ -73,18 +75,61 @@
     });
     card.append(answers);
     if (row.note) { const note = document.createElement('p'); note.className = 'poll-note'; note.textContent = row.note; card.append(note); }
-    if (!els.admin.hidden) { const actions = document.createElement('div'); actions.className = 'card-actions'; const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Edit'; edit.addEventListener('click', () => beginEdit(row)); const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', () => deletePoll(row)); actions.append(edit, remove); card.append(actions); }
+    if (publishingKey && !els.admin.hidden) { const actions = document.createElement('div'); actions.className = 'card-actions'; const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Edit'; edit.addEventListener('click', () => beginEdit(row)); const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', () => deletePoll(row)); actions.append(edit, remove); card.append(actions); }
     els.list.append(card);
   }
-  function beginEdit(row) { editingId = row.id; els.date.value = row.poll_date || ''; els.question.value = row.question || ''; els.options.value = (Array.isArray(row.options) ? row.options : []).join('\n'); syncSelected(); els.selected.value = String(row.selected_option ?? 0); els.note.value = row.note || ''; els.publish.textContent = 'Save changes'; els.cancel.hidden = false; els.form.scrollIntoView({ behavior: 'smooth', block: 'start' }); setFormStatus('Editing this question.'); }
+  function beginEdit(row) { if (!publishingKey) return; editingId = row.id; els.date.value = row.poll_date || ''; els.question.value = row.question || ''; els.options.value = (Array.isArray(row.options) ? row.options : []).join('\n'); syncSelected(); els.selected.value = String(row.selected_option ?? 0); els.note.value = row.note || ''; els.publish.textContent = 'Save changes'; els.cancel.hidden = false; els.form.scrollIntoView({ behavior: 'smooth', block: 'start' }); setFormStatus('Editing this question.'); }
   function resetForm() { editingId = null; els.form.reset(); els.date.value = localToday(); syncSelected(); els.publish.textContent = 'Publish question'; els.cancel.hidden = true; setFormStatus(''); }
-  async function publish(event) { event.preventDefault(); if (isBusy) return; const values = optionValues(); if (!els.key.value.trim() || !els.date.value || !els.question.value.trim() || values.length < 2 || values.length > 6 || els.selected.value === '' || !Number.isInteger(Number(els.selected.value)) || Number(els.selected.value) < 0 || Number(els.selected.value) >= values.length) { setFormStatus('Please complete the key, date, question, and 2–6 options.', 'error'); return; } isBusy = true; els.publish.disabled = true; setFormStatus(editingId ? 'Saving…' : 'Publishing…'); const body = { p_key: els.key.value, p_id: editingId, p_date: els.date.value, p_question: els.question.value.trim(), p_options: values, p_selected: Number(els.selected.value), p_note: els.note.value.trim() };
+  async function publish(event) { event.preventDefault(); if (isBusy) return; if (!publishingKey) { openUnlock(); return; } const values = optionValues(); if ( !els.date.value || !els.question.value.trim() || values.length < 2 || values.length > 6 || els.selected.value === '' || !Number.isInteger(Number(els.selected.value)) || Number(els.selected.value) < 0 || Number(els.selected.value) >= values.length) { setFormStatus('Please complete the date, question, and 2–6 options.', 'error'); return; } isBusy = true; els.publish.disabled = true; setFormStatus(editingId ? 'Saving…' : 'Publishing…'); const body = { p_key: publishingKey, p_id: editingId, p_date: els.date.value, p_question: els.question.value.trim(), p_options: values, p_selected: Number(els.selected.value), p_note: els.note.value.trim() };
     try { const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_publish`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json', Prefer: 'return=representation' }), body: JSON.stringify(body) }); if (!response.ok) throw new Error('Publishing failed. Check the key and try again.'); resetForm(); setFormStatus('Published successfully.'); await fetchPolls(false); } catch (error) { setFormStatus(error.message || 'Could not publish. Please try again.', 'error'); } finally { isBusy = false; els.publish.disabled = false; }
   }
-  async function deletePoll(row) { if (isBusy || !window.confirm(`Delete the question from ${formatDate(row.poll_date)}? This cannot be undone.`)) return; const key = els.key.value; if (!key) { setFormStatus('Enter the publishing key before deleting.', 'error'); return; } isBusy = true; setFormStatus('Deleting…'); try { const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_delete`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ p_key: key, p_id: row.id }) }); if (!response.ok) throw new Error('Delete failed. Check the key and try again.'); setFormStatus('Deleted.'); await fetchPolls(false); } catch (error) { setFormStatus(error.message || 'Could not delete. Please try again.', 'error'); } finally { isBusy = false; } }
-  function toggleAdmin(open) { els.admin.hidden = !open; els.adminToggle.setAttribute('aria-expanded', String(open)); if (open) { els.adminToggle.textContent = 'Close admin'; els.admin.scrollIntoView({ behavior: 'smooth', block: 'start' }); render(); } else { els.adminToggle.textContent = 'Admin'; render(); } }
+  async function deletePoll(row) { if (!publishingKey || isBusy || !window.confirm(`Delete the question from ${formatDate(row.poll_date)}? This cannot be undone.`)) return; const key = publishingKey; isBusy = true; setFormStatus('Deleting…'); try { const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_delete`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ p_key: key, p_id: row.id }) }); if (!response.ok) throw new Error('Delete failed. Check the key and try again.'); setFormStatus('Deleted.'); await fetchPolls(false); } catch (error) { setFormStatus(error.message || 'Could not delete. Please try again.', 'error'); } finally { isBusy = false; } }
+  function lockAdmin() {
+    publishingKey = ''; unlockAttempt += 1; els.key.value = '';
+    els.admin.hidden = true; els.adminToggle.setAttribute('aria-expanded', 'false');
+    els.adminToggle.setAttribute('aria-label', 'Unlock admin'); els.adminToggle.title = 'Unlock admin';
+    resetForm(); render();
+  }
+  function closeUnlock() {
+    unlockAttempt += 1; els.key.value = ''; els.unlockButton.disabled = false;
+    els.unlockButton.textContent = 'Unlock'; els.unlockStatus.textContent = '';
+    if (els.dialog.open) els.dialog.close();
+  }
+  function openUnlock() {
+    if (publishingKey) { lockAdmin(); return; }
+    els.unlockStatus.textContent = ''; els.key.value = '';
+    els.dialog.showModal(); els.key.focus();
+  }
+  async function unlockAdmin(event) {
+    event.preventDefault();
+    if (els.unlockButton.disabled) return;
+    const candidate = els.key.value;
+    if (!candidate.trim()) { els.unlockStatus.textContent = 'Enter your publishing key.'; els.key.focus(); return; }
+    const attempt = ++unlockAttempt;
+    els.unlockButton.disabled = true; els.unlockButton.textContent = 'Checking…';
+    els.unlockStatus.className = 'form-status'; els.unlockStatus.textContent = 'Checking your key…';
+    try {
+      const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_unlock`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ p_key: candidate }) });
+      const accepted = response.ok && await response.json() === true;
+      if (attempt !== unlockAttempt || !els.dialog.open) return;
+      if (!accepted) { els.unlockStatus.className = 'form-status error'; els.unlockStatus.textContent = 'Could not unlock. Check your publishing key and try again.'; els.key.value = ''; els.key.focus(); return; }
+      publishingKey = candidate; closeUnlock(); resetForm();
+      els.admin.hidden = false; els.adminToggle.setAttribute('aria-expanded', 'true');
+      els.adminToggle.setAttribute('aria-label', 'Lock admin'); els.adminToggle.title = 'Lock admin';
+      render(); els.admin.scrollIntoView({ behavior: 'smooth', block: 'start' }); els.date.focus({ preventScroll: true });
+    } catch (_) {
+      if (attempt === unlockAttempt) { els.unlockStatus.className = 'form-status error'; els.unlockStatus.textContent = 'Unable to check your key. Please try again.'; }
+    } finally {
+      if (attempt === unlockAttempt) { els.unlockButton.disabled = false; els.unlockButton.textContent = 'Unlock'; }
+    }
+  }
+  els.unlockForm.addEventListener('submit', unlockAdmin);
+  $('unlock-close').addEventListener('click', closeUnlock);
+  $('unlock-cancel').addEventListener('click', closeUnlock);
+  els.dialog.addEventListener('cancel', event => { event.preventDefault(); closeUnlock(); });
+  window.addEventListener('pagehide', () => { closeUnlock(); lockAdmin(); });
 
-  els.options.addEventListener('input', syncSelected); els.form.addEventListener('submit', publish); els.cancel.addEventListener('click', resetForm); els.adminToggle.addEventListener('click', () => toggleAdmin(els.admin.hidden)); els.adminClose.addEventListener('click', () => toggleAdmin(false)); let searchTimer; els.search.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => fetchPolls(false), 300); }); els.month.addEventListener('input', () => fetchPolls(false)); els.clear.addEventListener('click', () => { clearTimeout(searchTimer); els.search.value = ''; els.month.value = ''; fetchPolls(false); }); els.load.addEventListener('click', () => fetchPolls(true));
+  els.options.addEventListener('input', syncSelected); els.form.addEventListener('submit', publish); els.cancel.addEventListener('click', resetForm); els.adminToggle.addEventListener('click', openUnlock); els.adminClose.addEventListener('click', () => { lockAdmin(); els.adminToggle.focus(); }); let searchTimer; els.search.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => fetchPolls(false), 300); }); els.month.addEventListener('input', () => fetchPolls(false)); els.clear.addEventListener('click', () => { clearTimeout(searchTimer); els.search.value = ''; els.month.value = ''; fetchPolls(false); }); els.load.addEventListener('click', () => fetchPolls(true));
   $('filter-form').addEventListener('submit', e => e.preventDefault());
   els.date.value = localToday(); syncSelected(); fetchPolls(false);
 })();

@@ -10,3 +10,19 @@ label.answer{cursor:pointer;gap:10px;min-height:44px}
 .answer-tag{flex:0 0 auto}
 .answer:focus-within{outline:2px solid var(--purple);outline-offset:2px}
 .answer:hover{border-color:#b9a5dc}
+
+/* The publishing desk opens only after the separate key prompt succeeds. */
+.nav-admin{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;padding:10px}
+.nav-admin:hover,.nav-admin[aria-expanded="true"]{background:var(--lavender);color:var(--purple)}
+.nav-admin:focus-visible,.close-button:focus-visible{outline:2px solid var(--purple);outline-offset:3px}
+.unlock-dialog{width:min(440px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--line);border-radius:16px;padding:28px;background:var(--paper);color:var(--ink);box-shadow:var(--shadow)}
+.unlock-dialog::backdrop{background:rgba(48,36,60,.4);backdrop-filter:blur(3px)}
+.unlock-dialog .section-heading{align-items:center;margin-bottom:18px}
+.unlock-dialog h2{font-size:2rem}
+.unlock-dialog>p{color:var(--muted);font-size:.9rem}
+.unlock-dialog form{display:grid;gap:12px;margin-top:22px}
+.unlock-dialog label{font-size:.82rem;font-weight:700}
+.unlock-dialog input{width:100%;min-width:0;border:1px solid var(--line);border-radius:7px;background:var(--cream);padding:12px;font-size:16px}
+.unlock-dialog input:focus{outline:2px solid var(--purple);outline-offset:2px}
+.unlock-dialog .form-status{margin:0;min-height:1.5em}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button{transition:none}}
