@@ -42,7 +42,7 @@
 
     <section class="admin-panel" id="admin-panel" aria-labelledby="admin-title" hidden>
       <div class="section-heading"><div><p class="eyebrow">Private publishing desk</p><h2 id="admin-title">Publish a question</h2></div><button class="close-button" id="admin-close" type="button" aria-label="Close admin panel">×</button></div>
-      <p class="admin-intro">Admin unlocked. Closing this panel locks it again. Your key is held only in memory, never saved to this device.</p>
+      <p class="admin-intro">Admin unlocked for up to one hour. Closing this panel locks it again. Your password is never saved to this device.</p>
       <form id="poll-form" novalidate>
         <label>Date<input id="poll-date" type="date" required></label>
         <label>Question<textarea id="poll-question" rows="3" maxlength="500" required placeholder="What are you curious about today?"></textarea></label>
@@ -57,9 +57,9 @@
   </main>
   <dialog class="unlock-dialog" id="unlock-dialog" aria-labelledby="unlock-title" aria-describedby="unlock-description">
     <div class="section-heading"><div><p class="eyebrow">Private access</p><h2 id="unlock-title">Unlock admin</h2></div><button class="close-button" id="unlock-close" type="button" aria-label="Close unlock prompt">×</button></div>
-    <p id="unlock-description">Enter your publishing key to open the question-upload form. Everyone can browse the archive without unlocking.</p>
+    <p id="unlock-description">Enter your admin password to open the question-upload form. Everyone can browse the archive without unlocking.</p>
     <form id="unlock-form">
-      <label for="publishing-key">Publishing key</label>
+      <label for="publishing-key">Admin password</label>
       <input id="publishing-key" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" required autofocus aria-describedby="unlock-status">
       <p id="unlock-status" class="form-status" role="status" aria-live="polite"></p>
       <div class="form-actions"><button class="button button-primary" id="unlock-button" type="submit">Unlock</button><button class="button button-quiet" id="unlock-cancel" type="button">Cancel</button></div>

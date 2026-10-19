@@ -104,16 +104,17 @@
     event.preventDefault();
     if (els.unlockButton.disabled) return;
     const candidate = els.key.value;
-    if (!candidate.trim()) { els.unlockStatus.textContent = 'Enter your publishing key.'; els.key.focus(); return; }
+    if (!candidate.trim()) { els.unlockStatus.textContent = 'Enter your admin password.'; els.key.focus(); return; }
     const attempt = ++unlockAttempt;
     els.unlockButton.disabled = true; els.unlockButton.textContent = 'Checking…';
     els.unlockStatus.className = 'form-status'; els.unlockStatus.textContent = 'Checking your key…';
     try {
-      const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_unlock`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ p_key: candidate }) });
-      const accepted = response.ok && await response.json() === true;
+      const response = await fetch(`${baseUrl}/rest/v1/rpc/pollpe_admin_unlock`, { method: 'POST', headers: headers({ 'Content-Type': 'application/json' }), body: JSON.stringify({ p_password: candidate }) });
+      const token = response.ok ? await response.json() : null;
+      const accepted = typeof token === 'string' && token.length >= 32;
       if (attempt !== unlockAttempt || !els.dialog.open) return;
-      if (!accepted) { els.unlockStatus.className = 'form-status error'; els.unlockStatus.textContent = 'Could not unlock. Check your publishing key and try again.'; els.key.value = ''; els.key.focus(); return; }
-      publishingKey = candidate; closeUnlock(); resetForm();
+      if (!accepted) { els.unlockStatus.className = 'form-status error'; els.unlockStatus.textContent = 'Could not unlock. Check your admin password and try again.'; els.key.value = ''; els.key.focus(); return; }
+      publishingKey = token; closeUnlock(); resetForm();
       els.admin.hidden = false; els.adminToggle.setAttribute('aria-expanded', 'true');
       els.adminToggle.setAttribute('aria-label', 'Lock admin'); els.adminToggle.title = 'Lock admin';
       render(); els.admin.scrollIntoView({ behavior: 'smooth', block: 'start' }); els.date.focus({ preventScroll: true });
