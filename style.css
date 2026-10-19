@@ -42,3 +42,17 @@ label.answer{cursor:pointer;gap:10px;min-height:44px}
 .mail-content{white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0;color:var(--ink)}
 @media(max-width:700px){.mail-section{padding-left:18px;padding-right:18px}.top-nav{gap:13px}}
 .page-tabs{display:flex;align-items:center;gap:22px}.tab-link{white-space:nowrap}.mail-form input,.mail-form textarea{font-size:16px}@media(max-width:700px){.page-tabs{gap:12px}.top-nav{gap:8px;font-size:.78rem}.brand{font-size:1.1rem;gap:6px}.nav-admin{width:36px;height:36px;padding:7px}}@media(max-width:380px){.site-header{flex-wrap:wrap;gap:10px}.top-nav{margin-left:auto}}
+
+/* Public coins tracker. */
+.coins-section{max-width:1160px;margin:auto;padding:0 30px 100px}
+.timestamp-note{color:var(--muted);font-size:.8rem;margin:0;line-height:1.6}
+.mail-form input[readonly]{background:var(--lavender);color:var(--purple-dark)}
+.mail-form input:disabled{opacity:.65}
+.coins-list{display:grid;gap:14px;max-width:900px}
+.coins-list h4{margin:0 0 18px}
+.coin-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 18px}
+.coin-values dt{font-size:.75rem;color:var(--muted)}
+.coin-values dd{font-size:1.45rem;font-weight:750;margin:5px 0 0;overflow-wrap:anywhere}
+.coin-values>div:last-child dd{color:var(--purple)}
+@media(max-width:850px){.site-header{flex-wrap:wrap;gap:16px}.top-nav{width:100%;justify-content:space-between}.page-tabs{min-width:0;flex:1;gap:18px;overflow-x:auto;padding:4px 0}.top-nav .tab-link{font-size:.8rem}.nav-admin{flex-shrink:0}}
+@media(max-width:700px){.coins-section{padding-left:18px;padding-right:18px}.page-tabs{gap:14px}.coin-values{grid-template-columns:1fr}.coin-values>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.coin-values dd{margin:0;font-size:1.2rem}.hero{padding-top:36px;padding-bottom:45px}}

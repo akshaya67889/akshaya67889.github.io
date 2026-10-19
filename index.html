@@ -7,7 +7,8 @@
   <title>PollPe · Daily questions</title>
   <link rel="stylesheet" href="style.css">
   <script src="config.js" defer></script>
-  <script src="app.js?v=server-timestamps-20261019" defer></script>
+  <script src="app.js?v=coins-tracker-20261019" defer></script>
+  <script src="coins.js?v=coins-tracker-20261019" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -16,6 +17,7 @@
       <div class="page-tabs" role="tablist" aria-label="PollPe sections">
       <a class="tab-link" id="archive-tab" href="#archive" role="tab" aria-controls="archive" aria-selected="true" tabindex="0">Daily questions</a>
       <a class="tab-link" id="mail-tab" href="#mail" role="tab" aria-controls="mail" aria-selected="false" tabindex="-1">Mail &amp; OTP</a>
+      <a class="tab-link" id="coins-tab" href="#coins" role="tab" aria-controls="coins" aria-selected="false" tabindex="-1">PollPe coins tracker</a>
       </div>
       <button class="nav-admin" id="admin-toggle" type="button" aria-label="Unlock admin" title="Unlock admin" aria-haspopup="dialog" aria-controls="admin-panel" aria-expanded="false"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path><circle cx="12" cy="15" r="1"></circle><path d="M12 16v2"></path></svg></button>
     </nav>
@@ -25,7 +27,7 @@
     <section class="hero" aria-labelledby="page-title">
       <p class="eyebrow">A small question, every day</p>
       <h1 id="page-title">The PollPe archive</h1>
-      <p class="hero-copy">Browse daily questions or share a mail and OTP publicly. The published answer is selected to start; your changes stay on this page.</p>
+      <p class="hero-copy">Browse daily questions, share a mail and OTP, or track account coins publicly. The published answer is selected to start; your changes stay on this page.</p>
     </section>
 
     <section class="tab-panel archive-section" id="archive" aria-labelledby="archive-title" role="tabpanel" tabindex="-1">
@@ -55,6 +57,28 @@
       <div id="mail-list-status" class="status" role="status" aria-live="polite"></div>
       <div id="mail-list" class="mail-list" aria-live="polite"></div>
       <button class="button button-outline load-more" id="mail-load-more" type="button" hidden>Load more mail</button>
+    </section>
+
+    <section class="tab-panel coins-section" id="coins" aria-labelledby="coins-title" role="tabpanel" tabindex="-1" hidden>
+      <div class="section-heading"><div><p class="eyebrow">Every coin, accounted for</p><h2 id="coins-title">PollPe coins tracker</h2></div></div>
+      <p class="public-disclosure"><strong>No password needed.</strong> Email addresses and coin balances saved here are public. This is a manual tracker, not a connection to your PollPe account.</p>
+      <form id="coins-form" class="mail-form" novalidate>
+        <label>PollPe account email address<input id="coins-email" type="email" maxlength="254" autocomplete="email" required aria-describedby="coins-account-status"></label>
+        <div><button id="coins-lookup" class="button button-outline" type="button">Load account balance</button></div>
+        <p id="coins-account-status" class="timestamp-note" role="status" aria-live="polite">Enter an email to load its previous balance.</p>
+        <div class="form-grid">
+          <label>Total coins yesterday<input id="coins-yesterday" type="number" min="0" max="9007199254740991" step="1" readonly required aria-describedby="coins-baseline-note"></label>
+          <label>Coins credited today<input id="coins-credited" type="number" min="0" max="9007199254740991" step="1" inputmode="numeric" placeholder="Enter today's credited coins" required disabled></label>
+        </div>
+        <p id="coins-baseline-note" class="timestamp-note">Previous balances are filled automatically. For a new account, you can set its opening balance once.</p>
+        <label>Total coins today <span class="label-note">calculated automatically: yesterday + credited today</span><input id="coins-total" type="number" readonly aria-readonly="true" aria-live="polite"></label>
+        <p class="timestamp-note">Days use India time (Asia/Kolkata). After a gap, the last saved balance carries forward. Saving again today replaces today's credited amount; it does not add it twice. Dates and timestamps are set by the server.</p>
+        <div class="form-actions"><button class="button button-primary" id="coins-submit" type="submit" disabled>Save coins publicly</button><span id="coins-status" class="form-status" role="status" aria-live="polite"></span></div>
+      </form>
+      <div class="section-heading"><h3>Public coin history</h3><button class="button button-quiet" id="coins-refresh" type="button">Refresh history</button></div>
+      <div id="coins-list-status" class="status" role="status" aria-live="polite"></div>
+      <div id="coins-list" class="coins-list" aria-live="polite"></div>
+      <button class="button button-outline load-more" id="coins-load-more" type="button" hidden>Load older balances</button>
     </section>
 
     <section class="admin-panel" id="admin-panel" aria-labelledby="admin-title" hidden>
