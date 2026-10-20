@@ -105,7 +105,7 @@
   function escapeIlike(value) {
     // PostgREST uses * as the wildcard alias for %, while \, %, and _ have
     // pattern meaning. Escape them before URLSearchParams encodes the query.
-    return value.replace(/\\/g, '\\').replace(/[\%_*]/g, char => `\${char}`).replace(/"/g, '\"');
+    return value.replace(/\\/g, '\\\\').replace(/[\%_*]/g, char => `\\${char}`).replace(/"/g, '\\"');
   }
   function searchValue() { return $('coins-email-filter').value.trim(); }
   async function loadHistory(append = false, force = false) {
