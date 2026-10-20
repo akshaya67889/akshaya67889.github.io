@@ -13,6 +13,8 @@
   <script src="app.js?v=daily-status-20261020" defer></script>
   <script src="coins.js?v=positive-credits-20261020" defer></script>
   <script src="daily-status.js?v=positive-credits-20261020" defer></script>
+  <link rel="stylesheet" href="public-gmail.css?v=20261020">
+  <script src="public-gmail.js?v=20261020" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -44,7 +46,19 @@
 
     <section class="tab-panel mail-section" id="mail" aria-labelledby="mail-title" role="tabpanel" tabindex="-1" hidden>
       <div class="section-heading"><div><p class="eyebrow">Public mailbox</p><h2 id="mail-title">Mail &amp; OTP</h2></div><span class="count-label" id="mail-count" aria-live="polite"></span></div>
-      <p class="public-disclosure"><strong>Important:</strong> everything submitted here—including email addresses, messages, and OTPs—is public and visible to anyone. This is manual hosting only, not inbox integration.</p>
+      <p class="public-disclosure"><strong>Important:</strong> imported Gmail messages and everything submitted here—including email addresses, messages, and OTPs—are public and visible to anyone. Gmail sync is owner-controlled; messages are imported by the backend about once a minute, are not instant, and expire six hours after import. Manual posts keep their existing behavior.</p>
+      <section class="gmail-integration" id="gmail-integration" aria-labelledby="gmail-title">
+        <div class="gmail-status-row"><div><p class="eyebrow">Public Gmail inbox</p><h3 id="gmail-title">Imported messages</h3></div><span id="gmail-feed-count" class="count-label" aria-live="polite"></span></div>
+        <p class="gmail-intro">Anyone can read the public feed below. Only the owner can connect or manage the Gmail mailbox.</p>
+        <div id="gmail-status" class="status" role="status" aria-live="polite"></div>
+        <div id="gmail-setup" class="gmail-setup" hidden><p><strong>Setup pending.</strong> Google OAuth configuration is required before live inbox sync can begin.</p></div>
+        <div id="gmail-mailbox" class="gmail-mailbox" hidden><p><strong>Connected mailbox:</strong> <span id="gmail-connected-email"></span></p><p id="gmail-last-synced"></p><p id="gmail-error"></p></div>
+        <details class="gmail-owner"><summary>Owner management</summary><form id="gmail-unlock-form" novalidate><label class="sr-only" for="gmail-admin-password">Admin password</label><input id="gmail-admin-password" type="password" autocomplete="off" placeholder="Admin password" required><button class="button button-outline" type="submit">Unlock controls</button><span id="gmail-unlock-status" class="form-status" role="status" aria-live="polite"></span></form><div id="gmail-actions" class="gmail-actions" hidden><button id="gmail-connect" class="button button-primary" type="button">Connect Gmail</button><button id="gmail-sync" class="button button-outline" type="button" hidden>Sync now</button><button id="gmail-disconnect" class="button button-quiet" type="button" hidden>Disconnect</button></div></details>
+        <p class="gmail-disclosure">This feed is public by design, including OTPs. The connected mailbox is shown separately from each sender. Forwarding source is shown as <strong>Unknown</strong> unless the backend supplies a status; it is never inferred from the From field.</p>
+        <div class="gmail-feed-header"><h3>Latest imported mail</h3></div>
+        <div id="gmail-feed-status" class="status" role="status" aria-live="polite"></div><div id="gmail-feed-list" class="mail-list" aria-live="polite"></div><button class="button button-outline load-more" id="gmail-load-more" type="button" hidden>Load more imported mail</button>
+      </section>
+      <h3 class="manual-board-heading">Manual public board</h3>
       <form id="mail-form" class="mail-form" novalidate>
         <label>Email address<input id="mail-email" type="email" maxlength="254" autocomplete="email" required></label>
         <label>Content <span class="label-note">including an OTP, if needed · max 20,000 characters</span><textarea id="mail-content" rows="8" maxlength="20000" required></textarea></label>
