@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="description" content="PollPe protected forwarding inbox." />
+    <meta name="theme-color" content="#0b5ed7" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self' https://ewdpamsogpqhuzreaayo.supabase.co; img-src 'self' data:; font-src 'self'; style-src 'self'; script-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'"
+    />
+    <title>PollPe · Protected inbox</title>
+    <link rel="stylesheet" href="inbox.css" />
+    <script src="config.js" defer></script>
+    <script src="inbox.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#inbox-main">Skip to inbox</a>
+    <header class="inbox-header">
+      <a
+        class="brand"
+        href="index.html#mail"
+        aria-label="Back to PollPe public mailbox"
+        ><span class="brand-mark">P</span><span>pollpe</span></a
+      >
+      <div class="header-actions">
+        <span class="connection-dot" id="header-dot" aria-hidden="true"></span
+        ><span id="header-identity" class="header-identity"
+          >Protected inbox</span
+        ><button class="icon-button" id="logout-button" type="button" hidden>
+          Log out
+        </button>
+      </div>
+    </header>
+
+    <main id="inbox-main" class="inbox-shell">
+      <section
+        id="auth-view"
+        class="auth-card glass-card"
+        aria-labelledby="auth-title"
+      >
+        <div class="auth-mark" aria-hidden="true">✦</div>
+        <p class="eyebrow">Owner access</p>
+        <h1 id="auth-title">Your protected inbox</h1>
+        <p class="lede">
+          Sign in to view messages collected from your verified forwarding
+          routes. This private owner login is separate from the public admin
+          password.
+        </p>
+        <form id="auth-form" class="stack-form">
+          <label for="auth-email"
+            >Owner email<input
+              id="auth-email"
+              type="email"
+              autocomplete="username"
+              required
+              placeholder="you@example.com"
+          /></label>
+          <label for="auth-password"
+            >Password<input
+              id="auth-password"
+              type="password"
+              autocomplete="current-password"
+              required
+          /></label>
+          <button class="primary-button" type="submit" id="auth-submit">
+            Sign in securely
+          </button>
+          <p
+            id="auth-status"
+            class="inline-status"
+            role="status"
+            aria-live="polite"
+          ></p>
+        </form>
+        <div class="privacy-note">
+          <strong>Private by design.</strong> No source passwords are requested.
+          Email content is untrusted, rendered as text, and external
+          images/links are blocked.
+        </div>
+        <p class="settings-note">
+          First-time setup requires a private owner account in Supabase
+          Authentication and the website’s own Google OAuth configuration.
+          <a href="docs/PROTECTED-INBOX-SETUP.md">Read the setup guide</a>. Your
+          existing public admin password does not unlock this inbox.
+        </p>
+      </section>
+
+      <section id="app-view" hidden aria-labelledby="inbox-title">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">Protected workspace</p>
+            <h1 id="inbox-title">Forwarding inbox</h1>
+            <p class="lede">
+              Verified routing keeps the forwarding account distinct from the
+              original sender.
+            </p>
+          </div>
+          <div class="heading-actions">
+            <button class="secondary-button" id="refresh-button" type="button">
+              ↻ <span>Refresh</span></button
+            ><button class="primary-button" id="sync-button" type="button">
+              Sync now
+            </button>
+          </div>
+        </div>
+        <div
+          id="global-status"
+          class="status-banner"
+          role="status"
+          aria-live="polite"
+        ></div>
+        <div class="status-grid" aria-label="Inbox status">
+          <article class="status-card">
+            <span class="status-label">Connection</span
+            ><strong id="connection-status">Not checked</strong
+            ><small id="last-synced">No sync recorded</small>
+          </article>
+          <article class="status-card">
+            <span class="status-label">Messages</span
+            ><strong id="message-count">—</strong
+            ><small id="unknown-count">Unknown routes are never guessed</small>
+          </article>
+          <article class="status-card">
+            <span class="status-label">Identity</span
+            ><strong id="identity-status">Owner only</strong
+            ><small>Protected by Supabase Auth</small>
+          </article>
+        </div>
+
+        <div class="toolbar glass-card">
+          <label class="search-field" for="search-input"
+            ><span aria-hidden="true">⌕</span
+            ><input
+              id="search-input"
+              type="search"
+              placeholder="Search subject, sender, or content"
+              autocomplete="off"
+          /></label>
+          <div class="filter-grid">
+            <label for="source-filter"
+              >Forwarded from<select id="source-filter">
+                <option value="">All sources</option>
+              </select></label
+            ><label for="from-filter"
+              >From date<input id="from-filter" type="date" /></label
+            ><label for="to-filter"
+              >To date<input id="to-filter" type="date" /></label
+            ><label for="unknown-filter"
+              >Identity<select id="unknown-filter">
+                <option value="">All identities</option>
+                <option value="unknown">Unknown only</option>
+                <option value="verified">Verified only</option>
+                <option value="manual">Manual labels</option>
+              </select></label
+            >
+          </div>
+          <div class="toolbar-actions">
+            <button class="quiet-button" id="clear-filters" type="button">
+              Clear filters</button
+            ><button
+              class="secondary-button"
+              id="settings-button"
+              type="button"
+            >
+              Settings
+            </button>
+          </div>
+        </div>
+        <div class="list-heading">
+          <h2>Messages</h2>
+          <span id="list-summary" class="muted"></span>
+        </div>
+        <div id="message-list" class="message-list" aria-live="polite"></div>
+        <div
+          id="list-status"
+          class="empty-state"
+          role="status"
+          aria-live="polite"
+        >
+          <strong>Sign in to load your protected messages.</strong>
+        </div>
+        <div class="pagination">
+          <button
+            class="secondary-button"
+            id="previous-button"
+            type="button"
+            disabled
+          >
+            Previous</button
+          ><span id="page-label">Page 1</span
+          ><button
+            class="secondary-button"
+            id="next-button"
+            type="button"
+            disabled
+          >
+            Next
+          </button>
+        </div>
+      </section>
+
+      <section
+        id="settings-view"
+        class="settings-panel glass-card"
+        hidden
+        aria-labelledby="settings-title"
+      >
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Configuration</p>
+            <h2 id="settings-title">Inbox settings</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-settings"
+            type="button"
+            aria-label="Close settings"
+          >
+            ×
+          </button>
+        </div>
+        <p class="settings-note">
+          The owner login protects this private integration; it is intentionally
+          different from PollPe’s public admin password. Gmail authorization and
+          tokens stay on the server.
+        </p>
+        <div class="settings-block">
+          <div class="block-heading">
+            <div>
+              <h3>Central inbox</h3>
+              <p id="central-inbox-copy">
+                Not connected. Connect the central Gmail inbox through the
+                secure server flow.
+              </p>
+            </div>
+            <span id="central-badge" class="badge badge-muted"
+              >Not connected</span
+            >
+          </div>
+          <div class="form-actions">
+            <button class="primary-button" id="connect-button" type="button">
+              Connect Gmail</button
+            ><button
+              class="danger-button"
+              id="disconnect-button"
+              type="button"
+              hidden
+            >
+              Disconnect
+            </button>
+          </div>
+        </div>
+        <div class="settings-block">
+          <div class="block-heading">
+            <div>
+              <h3>Forwarding sources</h3>
+              <p>
+                Register each source route and verify it with a real test
+                message. Ordinary forwarding does not reliably preserve the
+                source account in Gmail’s From header. A verified badge requires
+                a trusted signed forwarding bridge; an alias-only route test
+                never proves the forwarding account.
+              </p>
+            </div>
+          </div>
+          <form id="source-form" class="inline-form">
+            <label for="source-email"
+              >Source email<input
+                id="source-email"
+                type="email"
+                placeholder="source@example.com"
+                required /></label
+            ><button class="secondary-button" type="submit">
+              Register source
+            </button>
+          </form>
+          <div id="source-list" class="source-list"></div>
+        </div>
+        <div class="settings-block">
+          <div class="block-heading">
+            <div>
+              <h3>Unknown identities</h3>
+              <p>
+                Unknown messages stay unknown until you manually choose a
+                registered source. This never changes the original sender. A
+                manual label is always unverified.
+              </p>
+            </div>
+          </div>
+          <div id="unknown-list" class="unknown-list">
+            <p class="muted">No unknown messages loaded.</p>
+          </div>
+        </div>
+        <div class="settings-block">
+          <div class="block-heading">
+            <div>
+              <h3>Maintenance</h3>
+              <p>
+                Use retry for failed imports. Purge permanently removes imported
+                messages from this protected integration.
+              </p>
+            </div>
+          </div>
+          <div id="error-list" class="error-list" aria-live="polite"></div>
+          <div class="form-actions">
+            <button class="secondary-button" id="retry-button" type="button">
+              Retry errors</button
+            ><button class="danger-button" id="purge-button" type="button">
+              Purge imported mail
+            </button>
+          </div>
+          <p
+            id="settings-status"
+            class="inline-status"
+            role="status"
+            aria-live="polite"
+          ></p>
+        </div>
+        <div class="privacy-note">
+          <strong>Source privacy.</strong> Message bodies are rendered without
+          active HTML, external images, tracking pixels, or automatic links.
+          Only the protected owner can access this view. Read/unread changes
+          apply only to PollPe; Gmail remains read-only.
+        </div>
+      </section>
+    </main>
+
+    <dialog
+      id="detail-dialog"
+      class="detail-dialog"
+      aria-labelledby="detail-title"
+    >
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Message detail</p>
+          <h2 id="detail-title">Message</h2>
+        </div>
+        <button
+          class="icon-button"
+          id="close-detail"
+          type="button"
+          aria-label="Close message"
+        >
+          ×
+        </button>
+      </div>
+      <div id="detail-meta" class="detail-meta"></div>
+      <div id="detail-body" class="detail-body"></div>
+      <div id="detail-attachments" class="attachments"></div>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
