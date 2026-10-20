@@ -5,13 +5,17 @@
   const apiKey = String(config.key || '');
   const pageSize = 25;
   let adminToken = '', ownerExpires = 0, rows = [], offset = 0, hasMore = false;
-  let statusData = null, busy = false, feedBusy = false, statusBusy = false, refreshTimer = null;
+  let statusData = null, busy = false, feedBusy = false, statusBusy = false, refreshTimer = null, selectedId = null;
   const $ = id => document.getElementById(id);
   const el = {
     panel: $('gmail-integration'), status: $('gmail-status'), setup: $('gmail-setup'),
     mailbox: $('gmail-mailbox'), email: $('gmail-connected-email'), synced: $('gmail-last-synced'),
     error: $('gmail-error'), unlockForm: $('gmail-unlock-form'), password: $('gmail-admin-password'),
     unlockStatus: $('gmail-unlock-status'), connect: $('gmail-connect'), sync: $('gmail-sync'), disconnect: $('gmail-disconnect'),
+    reader: $('gmail-reader'), readerClose: $('gmail-reader-close'),
+    readerSubject: $('gmail-reader-subject'), readerSender: $('gmail-reader-sender'),
+    readerMailbox: $('gmail-reader-mailbox'), readerDate: $('gmail-reader-date'),
+    readerExpiry: $('gmail-reader-expiry'), readerBody: $('gmail-reader-body'),
     actions: $('gmail-actions'), feedStatus: $('gmail-feed-status'), list: $('gmail-feed-list'), count: $('gmail-feed-count'), load: $('gmail-load-more'),
   };
   if (!el.panel) return;
@@ -107,24 +111,69 @@
       seen.add(id); return true;
     });
   }
+  const rowId = row => String(row.gmail_message_id || row.id);
+  function senderName(value) {
+    const sender = String(value || 'Unknown sender');
+    return sender.replace(/\s*<[^>]*>\s*$/, '').replace(/^"|"$/g, '').trim() || sender;
+  }
+  function shortDate(value) {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return 'Unknown time';
+    const today = new Date();
+    return new Intl.DateTimeFormat(undefined, d.toDateString() === today.toDateString()
+      ? { hour: 'numeric', minute: '2-digit' } : { day: 'numeric', month: 'short' }).format(d);
+  }
+  function fillReader(row) {
+    setText(el.readerSubject, row.subject || '(No subject)');
+    setText(el.readerSender, row.sender || 'Unknown sender');
+    setText(el.readerMailbox, row.mailbox_email || 'Unknown mailbox');
+    setText(el.readerDate, formatDate(row.received_at));
+    setText(el.readerExpiry, row.expires_at ? formatDate(row.expires_at) : 'Six hours after import');
+    // Email is untrusted. Plain text preserves content without executing HTML or loading trackers.
+    setText(el.readerBody, row.body_text || 'This message has no text content.');
+  }
+  function openMessage(row) {
+    if (row.expires_at && Date.parse(row.expires_at) <= Date.now()) { renderFeed(); return; }
+    selectedId = rowId(row);
+    fillReader(row);
+    el.reader.showModal();
+    el.reader.scrollTop = 0;
+  }
   function renderFeed() {
+    const focusedId = el.list.contains(document.activeElement) ? document.activeElement.dataset.messageId : null;
     rows = uniqueVisible(rows);
     el.list.replaceChildren();
-    setText(el.count, rows.length ? `${rows.length} imported message${rows.length === 1 ? '' : 's'}` : '');
-    if (!rows.length) message(el.feedStatus, 'No imported Gmail messages are available yet.', 'empty');
+    setText(el.count, rows.length ? `${rows.length} message${rows.length === 1 ? '' : 's'}` : '');
+    if (!rows.length) message(el.feedStatus, 'Your public inbox is empty. New Gmail messages will appear here automatically after sync.', 'empty');
     else {
       message(el.feedStatus, '');
       rows.forEach(row => {
-        const card = document.createElement('article'); card.className = 'mail-card gmail-card';
-        const heading = document.createElement('div'); heading.className = 'mail-meta'; heading.textContent = `Mailbox: ${row.mailbox_email || 'Unknown mailbox'} · ${formatDate(row.received_at)}`;
-        const sender = document.createElement('p'); sender.className = 'gmail-sender'; sender.textContent = `From: ${row.sender || 'Unknown sender'}`;
-        const subject = document.createElement('h3'); subject.className = 'gmail-subject'; subject.textContent = row.subject || '(No subject)';
-        const body = document.createElement('p'); body.className = 'mail-content'; body.textContent = row.body_text || '';
-        const source = document.createElement('p'); source.className = 'gmail-source'; source.textContent = 'Forwarding source: Unknown (not inferred from sender)';
-        card.append(heading, sender, subject, body, source); el.list.append(card);
+        const name = senderName(row.sender);
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'gmail-message-row';
+        button.dataset.messageId = rowId(row);
+        button.setAttribute('aria-haspopup', 'dialog'); button.setAttribute('aria-controls', 'gmail-reader');
+        const avatar = document.createElement('span'); avatar.className = 'gmail-avatar'; avatar.setAttribute('aria-hidden', 'true');
+        avatar.textContent = Array.from(name)[0].toUpperCase();
+        let color = 0; for (const char of name) color = (color + char.charCodeAt(0)) % 5;
+        avatar.dataset.color = String(color);
+        const content = document.createElement('span'); content.className = 'gmail-row-content';
+        const top = document.createElement('span'); top.className = 'gmail-row-top';
+        const sender = document.createElement('span'); sender.className = 'gmail-row-sender'; sender.textContent = name; sender.title = row.sender || name;
+        const date = document.createElement('time'); date.className = 'gmail-row-date'; date.textContent = shortDate(row.received_at); date.title = formatDate(row.received_at);
+        if (!Number.isNaN(Date.parse(row.received_at))) date.dateTime = new Date(row.received_at).toISOString();
+        const subject = document.createElement('span'); subject.className = 'gmail-row-subject'; subject.textContent = row.subject || '(No subject)';
+        const snippet = document.createElement('span'); snippet.className = 'gmail-row-snippet'; snippet.textContent = String(row.body_text || 'No text content').replace(/\s+/g, ' ').trim().slice(0, 180);
+        top.append(sender, date); content.append(top, subject, snippet); button.append(avatar, content);
+        button.addEventListener('click', () => openMessage(row)); el.list.append(button);
       });
     }
     el.load.hidden = !hasMore;
+    if (focusedId) Array.from(el.list.children).find(node => node.dataset.messageId === focusedId)?.focus({ preventScroll: true });
+    if (el.reader.open) {
+      const selected = rows.find(row => rowId(row) === selectedId);
+      if (selected) fillReader(selected);
+      else { el.reader.close(); message(el.feedStatus, 'That message is no longer available. Messages expire six hours after import.'); }
+    }
   }
   async function loadFeed(append = false) {
     if (!configured() || feedBusy) return;
@@ -157,6 +206,13 @@
     clearInterval(refreshTimer); refreshTimer = null;
     if (mailVisible()) { refresh(); refreshTimer = setInterval(refresh, 30000); }
   }
+  el.readerClose.addEventListener('click', () => el.reader.close());
+  el.reader.addEventListener('close', () => {
+    const previousId = selectedId; selectedId = null; el.readerBody.textContent = '';
+    Array.from(el.list.children).find(node => node.dataset.messageId === previousId)?.focus({ preventScroll: true });
+  });
+  // Enforce expiry locally even when the network is unavailable.
+  setInterval(() => { if (rows.some(row => row.expires_at && Date.parse(row.expires_at) <= Date.now())) renderFeed(); }, 1000);
   el.unlockForm.addEventListener('submit', unlock);
   el.connect.addEventListener('click', () => action('oauth.start'));
   el.sync.addEventListener('click', () => action('sync'));
