@@ -79,6 +79,15 @@
     return `Last submission: ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short', timeZone: INDIA_TIME_ZONE }).format(parsed)} (India time)`;
   }
 
+  function hasPositiveCredit(row) {
+    const value = typeof row.credited_today === 'number' ? row.credited_today : Number(row.credited_today);
+    return Number.isSafeInteger(value) && value > 0;
+  }
+
+  function completedToday(row) {
+    return row.tracking_date === state.day && hasPositiveCredit(row);
+  }
+
   function filteredRows() {
     const query = els.search.value.trim().toLocaleLowerCase();
     return query ? state.rows.filter(row => String(row.email_address || '').toLocaleLowerCase().includes(query)) : state.rows;
@@ -86,7 +95,7 @@
 
   function render() {
     const rows = filteredRows();
-    const completed = state.rows.filter(row => row.tracking_date === state.day).length;
+    const completed = state.rows.filter(completedToday).length;
     els.date.textContent = state.day ? formatDate(state.day) : '';
     els.summary.textContent = state.rows.length ? `${completed} completed · ${state.rows.length - completed} pending · ${state.rows.length} emails` : '';
     els.list.replaceChildren();
@@ -108,11 +117,11 @@
       const heading = document.createElement('h3');
       heading.className = 'daily-status-email';
       heading.textContent = row.email_address || 'Email unavailable';
-      const completedToday = row.tracking_date === state.day;
+      const completed = completedToday(row);
       const badge = document.createElement('span');
-      badge.className = `daily-status-badge ${completedToday ? 'is-completed' : 'is-pending'}`;
-      badge.textContent = completedToday ? 'Completed' : 'Pending';
-      badge.setAttribute('aria-label', completedToday ? 'Completed today' : 'Pending today');
+      badge.className = `daily-status-badge ${completed ? 'is-completed' : 'is-pending'}`;
+      badge.textContent = completed ? 'Completed' : 'Pending';
+      badge.setAttribute('aria-label', completed ? 'Completed today' : 'Pending today');
       const note = document.createElement('p');
       note.className = 'daily-status-note';
       note.textContent = formatSubmission(row.updated_at);
@@ -129,7 +138,7 @@
     let serverDay = '';
     while (true) {
       const params = new URLSearchParams({
-        select: 'email_address,tracking_date,updated_at',
+        select: 'email_address,tracking_date,credited_today,updated_at',
         order: 'email_address.asc',
         limit: String(PAGE_SIZE),
         offset: String(offset)
@@ -249,7 +258,7 @@
     if (active()) load();
   }
 
-  window.PollPeDailyStatus = Object.freeze({ indiaDate, formatDate });
+  window.PollPeDailyStatus = Object.freeze({ indiaDate, formatDate, hasPositiveCredit, completedToday });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();

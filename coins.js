@@ -12,6 +12,7 @@
   const normalizedEmail = () => email.value.trim().toLowerCase();
   const validEmail = value => value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   const whole = value => /^\d+$/.test(value) && Number.isSafeInteger(Number(value));
+  const positiveWhole = value => whole(value) && Number(value) > 0;
   const headers = () => ({ apikey: config.key, Accept: 'application/json', 'Content-Type': 'application/json' });
   const number = value => Number(value).toLocaleString();
   function message(text, error = false) { status.textContent = text; status.className = `form-status${error ? ' error' : ''}`; }
@@ -35,7 +36,9 @@
     if (!saving) lookup.disabled = false;
   }
   function calculate() {
-    const valid = context && contextEmail === normalizedEmail() && whole(yesterday.value) && whole(credited.value);
+    const creditedIsZero = credited.value.trim() === '0';
+    credited.setCustomValidity(creditedIsZero ? 'Enter a positive whole number greater than 0.' : '');
+    const valid = context && contextEmail === normalizedEmail() && whole(yesterday.value) && positiveWhole(credited.value);
     const sum = valid ? Number(yesterday.value) + Number(credited.value) : NaN;
     total.value = Number.isSafeInteger(sum) ? String(sum) : '';
     submit.disabled = saving || !Number.isSafeInteger(sum);
@@ -150,7 +153,7 @@
   email.addEventListener('change', () => { if (validEmail(normalizedEmail())) loadAccount(); });
   lookup.addEventListener('click', loadAccount);
   editBalance.addEventListener('click', () => setBaselineEditing(!baselineUnlocked));
-  yesterday.addEventListener('input', calculate); credited.addEventListener('input', calculate);
+  yesterday.addEventListener('input', calculate); credited.addEventListener('input', calculate); credited.addEventListener('change', calculate);
   $('coins-form').addEventListener('submit', save);
   $('coins-refresh').addEventListener('click', () => loadHistory(false, true));
   $('coins-load-more').addEventListener('click', () => loadHistory(true));

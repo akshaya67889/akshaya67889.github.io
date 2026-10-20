@@ -11,8 +11,8 @@
   <meta name="theme-color" content="#e4ebef">
   <script src="config.js" defer></script>
   <script src="app.js?v=daily-status-20261020" defer></script>
-  <script src="coins.js?v=full-balances-restored-20261020" defer></script>
-  <script src="daily-status.js?v=daily-status-20261020" defer></script>
+  <script src="coins.js?v=positive-credits-20261020" defer></script>
+  <script src="daily-status.js?v=positive-credits-20261020" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -66,7 +66,7 @@
         <p id="coins-account-status" class="timestamp-note" role="status" aria-live="polite">Enter an email to load its current balance.</p>
         <div class="form-grid">
           <label>Total coins yesterday<input id="coins-yesterday" type="number" min="0" max="9007199254740991" step="1" readonly required aria-describedby="coins-baseline-note"></label>
-          <label>Coins credited today<input id="coins-credited" type="number" min="0" max="9007199254740991" step="1" inputmode="numeric" placeholder="Enter today's credited coins" required disabled></label>
+          <label>Coins credited today<input id="coins-credited" type="number" min="1" max="9007199254740991" step="1" inputmode="numeric" placeholder="Enter today's credited coins" required disabled></label>
         </div>
         <div class="form-actions"><button id="coins-edit-balance" class="button button-outline" type="button" disabled aria-pressed="false">Edit starting balance</button><span id="coins-baseline-note" class="timestamp-note">Current balances are filled automatically. Load an account, then use Edit starting balance whenever you need to correct its baseline.</span></div>
         <label>Total coins today <span class="label-note">calculated automatically: yesterday + credited today</span><input id="coins-total" type="number" readonly aria-readonly="true" aria-live="polite"></label>
@@ -82,7 +82,7 @@
 
     <section class="tab-panel daily-status-section" id="daily-status" aria-labelledby="completion-title" role="tabpanel" tabindex="-1" hidden>
       <div class="section-heading"><div><p class="eyebrow" id="completion-date"></p><h2 id="completion-title">Daily coin status</h2></div><button class="button button-quiet" id="completion-refresh" type="button">Refresh status</button></div>
-      <p class="public-disclosure">All email addresses already in the coins tracker appear here. <strong>Completed</strong> means coins were submitted for today in India time, including a submission of 0 coins. Otherwise, the status is <strong>Pending</strong>. Status resets automatically at <strong>12:00 AM IST</strong>; saved balances are kept.</p>
+      <p class="public-disclosure">All email addresses already in the coins tracker appear here. <strong>Completed</strong> means a positive whole number of coins was submitted for today in India time. Zero, empty, negative, and fractional entries remain <strong>Pending</strong>. Status resets automatically at <strong>12:00 AM IST</strong>; saved balances are kept.</p>
       <p class="timestamp-note">Public, view-only list. Updates after a coin submission, when you open this tab, and every minute while this tab is visible.</p>
       <p id="completion-summary" class="completion-summary" aria-live="polite"></p>
       <label class="completion-filter" for="completion-search">Search PollPe email addresses<input id="completion-search" type="search" maxlength="254" autocomplete="off" placeholder="Search email address"></label>
