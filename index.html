@@ -13,8 +13,8 @@
   <script src="app.js?v=gmail-inbox-20261020" defer></script>
   <script src="coins.js?v=positive-credits-20261020" defer></script>
   <script src="daily-status.js?v=positive-credits-20261020" defer></script>
-  <link rel="stylesheet" href="public-gmail.css?v=inbox-20261020">
-  <script src="public-gmail.js?v=inbox-20261020" defer></script>
+  <link rel="stylesheet" href="public-gmail.css?v=forwarding-20261020">
+  <script src="public-gmail.js?v=forwarding-20261020" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -48,7 +48,7 @@
       <div class="section-heading"><div><p class="eyebrow">Public Gmail inbox</p><h2 id="mail-title">Mail &amp; OTP</h2></div><span class="gmail-live-label">Public · 6h</span></div>
       <section class="gmail-integration" id="gmail-integration" aria-labelledby="gmail-title">
         <div class="gmail-status-row"><h3 id="gmail-title">Inbox</h3><span id="gmail-feed-count" class="count-label" aria-live="polite"></span></div>
-        <p class="gmail-intro">Select a message to read it. Newest mail appears first.</p>
+        <p class="gmail-intro">Select a message to read it. Forwarding accounts are shown when message headers provide them.</p>
         <p class="gmail-public-note"><strong>Public inbox:</strong> anyone can read these emails and OTPs. Messages expire six hours after import.</p>
         <div id="gmail-feed-status" class="status" role="status" aria-live="polite"></div>
         <div id="gmail-feed-list" class="gmail-inbox-list" aria-label="Gmail messages"></div>
@@ -64,7 +64,7 @@
       <dialog id="gmail-reader" class="gmail-reader" aria-labelledby="gmail-reader-subject">
         <div class="gmail-reader-toolbar"><span>Public message</span><button id="gmail-reader-close" class="button button-outline" type="button" autofocus>Back to inbox</button></div>
         <h3 id="gmail-reader-subject"></h3>
-        <dl class="gmail-reader-meta"><dt>From</dt><dd id="gmail-reader-sender"></dd><dt>Mailbox</dt><dd id="gmail-reader-mailbox"></dd><dt>Received</dt><dd id="gmail-reader-date"></dd><dt>Expires</dt><dd id="gmail-reader-expiry"></dd><dt>Forwarding source</dt><dd>Unknown (not inferred from sender)</dd></dl>
+        <dl class="gmail-reader-meta"><dt>From</dt><dd id="gmail-reader-sender"></dd><dt>Mailbox</dt><dd id="gmail-reader-mailbox"></dd><dt>Received</dt><dd id="gmail-reader-date"></dd><dt>Expires</dt><dd id="gmail-reader-expiry"></dd><dt>Forwarded via</dt><dd id="gmail-reader-forwarder"></dd><dt>Forwarding details</dt><dd id="gmail-reader-evidence"></dd><dt>To / delivered to</dt><dd id="gmail-reader-recipients"></dd></dl>
         <div id="gmail-reader-body" class="gmail-reader-body"></div>
       </dialog>
     </section>

@@ -54,3 +54,5 @@ body:has(.gmail-reader[open]) { overflow: hidden; }
   .gmail-reader h3 { font-size: 1.2rem; }
   .gmail-reader-meta { gap: 8px 10px; font-size: .72rem; }
 }
+
+.gmail-row-route { color: #3157a9; font-size: .74rem; line-height: 1.5; overflow-wrap: anywhere; }

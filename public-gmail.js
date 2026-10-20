@@ -14,6 +14,7 @@
     unlockStatus: $('gmail-unlock-status'), connect: $('gmail-connect'), sync: $('gmail-sync'), disconnect: $('gmail-disconnect'),
     reader: $('gmail-reader'), readerClose: $('gmail-reader-close'),
     readerSubject: $('gmail-reader-subject'), readerSender: $('gmail-reader-sender'),
+    readerForwarder: $('gmail-reader-forwarder'), readerEvidence: $('gmail-reader-evidence'), readerRecipients: $('gmail-reader-recipients'),
     readerMailbox: $('gmail-reader-mailbox'), readerDate: $('gmail-reader-date'),
     readerExpiry: $('gmail-reader-expiry'), readerBody: $('gmail-reader-body'),
     actions: $('gmail-actions'), feedStatus: $('gmail-feed-status'), list: $('gmail-feed-list'), count: $('gmail-feed-count'), load: $('gmail-load-more'),
@@ -127,6 +128,10 @@
     setText(el.readerSubject, row.subject || '(No subject)');
     setText(el.readerSender, row.sender || 'Unknown sender');
     setText(el.readerMailbox, row.mailbox_email || 'Unknown mailbox');
+    setText(el.readerForwarder, row.forwarding_email || 'Not available in message headers');
+    const evidenceLabels = { 'x-forwarded-for': 'X-Forwarded-For header', 'resent-from': 'Resent-From / Resent-To headers' };
+    setText(el.readerEvidence, row.forwarding_email ? `${evidenceLabels[row.forwarding_evidence] || 'Forwarding headers'} (reported, not verified)` : 'The sender is shown separately; it is not assumed to be the forwarding account.');
+    setText(el.readerRecipients, Array.isArray(row.recipient_emails) && row.recipient_emails.length ? row.recipient_emails.join(', ') : 'Not available');
     setText(el.readerDate, formatDate(row.received_at));
     setText(el.readerExpiry, row.expires_at ? formatDate(row.expires_at) : 'Six hours after import');
     // Email is untrusted. Plain text preserves content without executing HTML or loading trackers.
@@ -163,7 +168,10 @@
         if (!Number.isNaN(Date.parse(row.received_at))) date.dateTime = new Date(row.received_at).toISOString();
         const subject = document.createElement('span'); subject.className = 'gmail-row-subject'; subject.textContent = row.subject || '(No subject)';
         const snippet = document.createElement('span'); snippet.className = 'gmail-row-snippet'; snippet.textContent = String(row.body_text || 'No text content').replace(/\s+/g, ' ').trim().slice(0, 180);
-        top.append(sender, date); content.append(top, subject, snippet); button.append(avatar, content);
+        const route = document.createElement('span'); route.className = 'gmail-row-route';
+        route.textContent = row.forwarding_email ? `Forwarded via: ${row.forwarding_email}` : `From: ${row.sender || 'Unknown sender'}`;
+        route.title = route.textContent;
+        top.append(sender, date); content.append(top, subject, route, snippet); button.append(avatar, content);
         button.addEventListener('click', () => openMessage(row)); el.list.append(button);
       });
     }
@@ -182,7 +190,7 @@
     const nextOffset = append ? offset : 0;
     if (!rows.length) message(el.feedStatus, 'Loading imported Gmail…');
     el.load.disabled = true;
-    const params = new URLSearchParams({ select: 'id,gmail_message_id,mailbox_email,sender,subject,body_text,received_at,source_account_status,expires_at', order: 'received_at.desc,id.desc', limit: String(count), offset: String(nextOffset), expires_at: `gt.${new Date().toISOString()}` });
+    const params = new URLSearchParams({ select: 'id,gmail_message_id,mailbox_email,sender,subject,body_text,received_at,source_account_status,expires_at,forwarding_email,forwarding_evidence,recipient_emails', order: 'received_at.desc,id.desc', limit: String(count), offset: String(nextOffset), expires_at: `gt.${new Date().toISOString()}` });
     try {
       const r = await fetch(`${baseUrl}/rest/v1/pollpe_gmail_messages?${params}`, { headers: headers(), signal: AbortSignal.timeout(15000) });
       if (!r.ok) throw new Error(`Gmail feed request failed (${r.status}).`);
