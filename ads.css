@@ -1,0 +1,43 @@
+/* Only ad containers are styled; application panels and navigation stay unchanged. */
+.pollpe-ad {
+  width: calc(100% - 64px);
+  max-width: 1056px;
+  min-width: 0;
+  margin: 0 auto 32px;
+}
+.pollpe-ad-label {
+  margin: 0 0 8px;
+  color: var(--muted, #66768b);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.pollpe-ad-scroll {
+  width: 100%;
+  max-width: 728px;
+  min-height: 90px;
+  margin: 0 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.pollpe-ad-scroll:focus-visible {
+  outline: 2px solid var(--purple, #3156db);
+  outline-offset: 4px;
+}
+.pollpe-ad-frame {
+  display: block;
+  width: 728px;
+  height: 90px;
+  max-width: none;
+  border: 0;
+}
+.pollpe-ad-native {
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .pollpe-ad { width: calc(100% - 36px); margin-bottom: 24px; }
+}
